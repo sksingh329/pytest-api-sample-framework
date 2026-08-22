@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{ meta.suite_title | default("API Test Report") }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --surface-2: #fbfbf9;
+  --ink: #17181c;
+  --muted: #5c626b;
+  --line: #e6e6e1;
+  --accent: #2f5f8a;
+  --accent-tint: #e8eff5;
+
+  --ok: #0f7a52;
+  --ok-tint: #e3f3ea;
+  --bad: #c0341d;
+  --bad-tint: #fbe9e5;
+  --warn: #a3690f;
+  --warn-tint: #f8eddc;
+
+  --get: #2f5f8a;
+  --get-tint: #e8eff5;
+  --post: #0f7a52;
+  --post-tint: #e3f3ea;
+  --put: #a3690f;
+  --put-tint: #f8eddc;
+  --delete: #c0341d;
+  --delete-tint: #fbe9e5;
+
+  --shadow: 0 1px 2px rgba(23,24,28,0.04), 0 8px 24px rgba(23,24,28,0.05);
+  --radius-card: 14px;
+  --radius-pill: 999px;
+  --radius-sm: 8px;
+
+  --font-sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1013;
+    --surface: #15181d;
+    --surface-2: #191c22;
+    --ink: #e9ebee;
+    --muted: #9aa1ab;
+    --line: #262b33;
+    --accent: #7db3e0;
+    --accent-tint: #16232f;
+
+    --ok: #34c88d;
+    --ok-tint: #113127;
+    --bad: #f06a52;
+    --bad-tint: #35201d;
+    --warn: #e3ad4c;
+    --warn-tint: #332812;
+
+    --get: #7db3e0;
+    --get-tint: #16232f;
+    --post: #34c88d;
+    --post-tint: #113127;
+    --put: #e3ad4c;
+    --put-tint: #332812;
+    --delete: #f06a52;
+    --delete-tint: #35201d;
+
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0e1013;
+  --surface: #15181d;
+  --surface-2: #191c22;
+  --ink: #e9ebee;
+  --muted: #9aa1ab;
+  --line: #262b33;
+  --accent: #7db3e0;
+  --accent-tint: #16232f;
+
+  --ok: #34c88d;
+  --ok-tint: #113127;
+  --bad: #f06a52;
+  --bad-tint: #35201d;
+  --warn: #e3ad4c;
+  --warn-tint: #332812;
+
+  --get: #7db3e0;
+  --get-tint: #16232f;
+  --post: #34c88d;
+  --post-tint: #113127;
+  --put: #e3ad4c;
+  --put-tint: #332812;
+  --delete: #f06a52;
+  --delete-tint: #35201d;
+
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+}
+
+* { box-sizing: border-box; }
+html { color-scheme: light dark; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1240px; margin: 0 auto; padding: 48px 40px 64px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+button { font-family: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+a { color: var(--accent); }
+
+/* ---------- header ---------- */
+.run-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
+.run-status { display: flex; align-items: center; gap: 10px; }
+.status-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--ok); flex: none; }
+.status-dot.fail { background: var(--bad); }
+.run-title { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.run-subtitle { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.chip {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.chip strong { color: var(--ink); font-weight: 600; }
+.header-actions { display: flex; gap: 8px; align-items: center; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color .12s ease, background .12s ease;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* ---------- KPI strip ---------- */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.kpi { padding: 18px 20px; border-right: 1px solid var(--line); }
+.kpi:last-child { border-right: none; }
+.kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+.kpi-value { font-family: var(--font-mono); font-size: 26px; font-weight: 600; margin-top: 8px; }
+.kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; font-family: var(--font-mono); }
+.kpi-sub .up { color: var(--ok); }
+.kpi-sub .down { color: var(--bad); }
+
+/* ---------- charts row ---------- */
+.charts-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; margin-bottom: 24px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow); padding: 18px 20px; }
+.card-title { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 14px; }
+
+.history-chart { display: flex; align-items: flex-end; gap: 8px; height: 110px; }
+.history-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; color: inherit; text-decoration: none; }
+.history-col.linkable { cursor: pointer; }
+.history-col.linkable:hover .history-bars { opacity: .65; }
+.history-col.linkable:hover .history-run { color: var(--accent); }
+.history-bars { width: 100%; max-width: 22px; height: 84px; display: flex; flex-direction: column-reverse; border-radius: 3px; overflow: hidden; background: var(--line); opacity: .38; }
+.history-col.current .history-bars { opacity: 1; }
+.history-bars .seg.pass { background: var(--ok); }
+.history-bars .seg.fail { background: var(--bad); }
+.history-bars .seg.skip { background: var(--muted); }
+.history-run { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.history-col.current .history-run { color: var(--ink); font-weight: 600; }
+
+.latency-rows { display: flex; flex-direction: column; gap: 8px; }
+.latency-row { display: grid; grid-template-columns: 84px 1fr 34px; align-items: center; gap: 10px; }
+.latency-bucket { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.latency-track { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; }
+.latency-fill { height: 100%; background: var(--accent); border-radius: 5px; }
+.latency-count { font-family: var(--font-mono); font-size: 11px; color: var(--muted); text-align: right; }
+.p95-caption { margin-top: 12px; font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+/* ---------- failure digest ---------- */
+.failure-digest { margin-bottom: 24px; }
+.failure-digest .card-title { color: var(--bad); }
+.digest-list { display: flex; flex-direction: column; }
+.digest-row {
+  display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: baseline;
+  padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; cursor: pointer; background: none; border-left: none; border-right: none; border-bottom: none; width: 100%; text-align: left; color: inherit;
+}
+.digest-row:first-child { border-top: none; }
+.digest-row:hover { color: var(--accent); }
+.digest-mark { color: var(--bad); font-weight: 700; }
+.digest-name { font-weight: 500; }
+.digest-detail { color: var(--muted); font-family: var(--font-mono); font-size: 12px; }
+.empty-digest { color: var(--muted); font-size: 13px; padding: 6px 0; }
+
+/* ---------- filter bar ---------- */
+.filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+.search-input {
+  flex: 1; min-width: 200px; padding: 9px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 13px;
+}
+select.filter-select {
+  padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font-size: 12px;
+}
+.toggle-btn {
+  padding: 8px 12px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+  background: var(--surface); color: var(--muted); font-size: 12px; cursor: pointer;
+}
+.toggle-btn.active { background: var(--bad-tint); border-color: var(--bad); color: var(--bad); font-weight: 600; }
+.filter-count { margin-left: auto; font-size: 12px; color: var(--muted); font-family: var(--font-mono); white-space: nowrap; }
+
+/* ---------- table ---------- */
+.table-card { border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
+.table-scroll { overflow-x: auto; }
+table.test-table { width: 100%; border-collapse: collapse; min-width: 720px; }
+.test-table thead th {
+  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap;
+}
+.test-table th button.sort-btn {
+  background: none; border: none; color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit;
+  cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 4px;
+}
+.test-table th button.sort-btn .arrow { opacity: .35; font-size: 10px; }
+.test-table th button.sort-btn.sorted .arrow { opacity: 1; color: var(--accent); }
+.group-row td { padding: 10px 16px; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--line); border-top: 1px solid var(--line); }
+.group-row .count { font-weight: 400; font-family: var(--font-mono); }
+.test-row { border-bottom: 1px solid var(--line); cursor: pointer; }
+.test-row:hover { background: var(--surface-2); }
+.test-row.fail { background: var(--bad-tint); }
+.test-row.fail:hover { background: var(--bad-tint); filter: brightness(0.97); }
+.test-row td { padding: 12px 16px; vertical-align: middle; }
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+  padding: 3px 9px; border-radius: var(--radius-pill); letter-spacing: .03em;
+}
+.pill.pass { background: var(--ok-tint); color: var(--ok); }
+.pill.fail { background: var(--bad-tint); color: var(--bad); }
+.pill.skip { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.test-name-cell .test-name { font-weight: 500; }
+.test-name-cell .test-sub { margin-top: 3px; display: flex; align-items: center; gap: 7px; }
+.method-badge { font-family: var(--font-mono); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+.method-badge.GET { background: var(--get-tint); color: var(--get); }
+.method-badge.POST { background: var(--post-tint); color: var(--post); }
+.method-badge.PUT, .method-badge.PATCH { background: var(--put-tint); color: var(--put); }
+.method-badge.DELETE { background: var(--delete-tint); color: var(--delete); }
+.path-mono { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.code-cell { font-family: var(--font-mono); font-size: 13px; }
+.latency-cell { font-family: var(--font-mono); font-size: 13px; }
+.latency-cell.warn { color: var(--warn); font-weight: 600; }
+.latency-cell.bad { color: var(--bad); font-weight: 600; }
+.assertions-cell { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.caret-cell { text-align: right; color: var(--muted); }
+.caret { display: inline-block; transition: transform .12s ease; }
+.test-row.expanded .caret { transform: rotate(90deg); }
+
+/* ---------- row detail ---------- */
+.detail-row td { padding: 0; border-bottom: 1px solid var(--line); }
+.detail-inner { padding: 20px 20px 24px; background: var(--surface-2); display: flex; flex-direction: column; gap: 18px; }
+.detail-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 10px; }
+.log-toggle {
+  background: none; border: none; padding: 0; margin: 0; width: 100%;
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  font: inherit; text-transform: inherit; letter-spacing: inherit; color: inherit;
+}
+.log-toggle:hover { color: var(--accent); }
+.log-toggle .caret { color: var(--muted); }
+.log-toggle.expanded .caret { transform: rotate(90deg); }
+.assertion-list { display: flex; flex-direction: column; gap: 6px; }
+.assertion-item { display: grid; grid-template-columns: 18px 1fr auto; gap: 10px; align-items: start; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--surface); border: 1px solid var(--line); font-size: 13px; }
+.assertion-item.fail { border-color: var(--bad); background: var(--bad-tint); }
+.assertion-mark { font-weight: 700; }
+.assertion-item.pass .assertion-mark { color: var(--ok); }
+.assertion-item.fail .assertion-mark { color: var(--bad); }
+.assertion-title { font-weight: 500; }
+.assertion-ea { font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; }
+.assertion-item.fail .assertion-ea { color: var(--bad); font-weight: 600; }
+.violation-list { grid-column: 1 / -1; margin-top: 4px; font-family: var(--font-mono); font-size: 12px; color: var(--bad); padding-left: 28px; }
+
+.call-block { margin-bottom: 16px; }
+.call-block:last-child { margin-bottom: 0; }
+.call-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.call-status { color: var(--muted); }
+
+.reqres-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.reqres-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; min-width: 0; }
+.reqres-panel h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.kv-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+.kv-list .kv { display: flex; gap: 6px; font-family: var(--font-mono); font-size: 11.5px; }
+.kv-list .k { color: var(--muted); }
+.kv-list .v { color: var(--ink); overflow-wrap: anywhere; }
+pre.body-pre {
+  margin: 0; font-family: var(--font-mono); font-size: 11.5px; white-space: pre-wrap; word-break: break-word;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px; max-height: 220px; overflow: auto;
+}
+.curl-btn { margin-top: 10px; font-size: 12px; }
+
+.log-list { display: flex; flex-direction: column; gap: 2px; font-family: var(--font-mono); font-size: 12px; }
+.log-line { display: grid; grid-template-columns: 78px 1fr; gap: 10px; padding: 3px 8px; border-radius: 4px; }
+.log-line .ts { color: var(--muted); }
+.log-line.trace { color: var(--muted); }
+.log-line.debug { color: var(--muted); }
+.log-line.info { color: var(--ink); }
+.log-line.warn { color: var(--warn); background: var(--warn-tint); }
+.log-line.error, .log-line.fail { color: var(--bad); background: var(--bad-tint); }
+.log-line.pass { color: var(--ok); }
+.log-phase { font-weight: 700; margin-right: 2px; }
+.log-phase-setup { color: var(--accent); }
+.log-phase-test { color: var(--muted); }
+.log-phase-teardown { color: var(--put); }
+
+/* ---------- footer ---------- */
+.report-footer { display: flex; flex-wrap: wrap; gap: 20px; padding-top: 20px; margin-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+.report-footer b { color: var(--ink); font-weight: 600; }
+
+.empty-state { text-align: center; padding: 40px 0; color: var(--muted); font-size: 13px; }
+
+.command-card { margin-bottom: 24px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+.command-card .card-title { margin-bottom: 0; flex: none; }
+.command-text {
+  flex: 1; min-width: 0; overflow-x: auto; white-space: pre;
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--ink);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 8px 12px;
+}
+
+.copied-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--bg); font-size: 12px; padding: 8px 16px; border-radius: var(--radius-pill);
+  opacity: 0; pointer-events: none; transition: opacity .15s ease;
+}
+.copied-toast.show { opacity: 1; }
+
+@media (max-width: 860px) {
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .kpi:nth-child(odd) { border-right: 1px solid var(--line); }
+  .charts-row { grid-template-columns: 1fr; }
+  .reqres-grid { grid-template-columns: 1fr; }
+  .wrap { padding: 28px 18px 48px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="run-header">
+    <div>
+      <div class="run-status">
+        <span class="status-dot" id="status-dot"></span>
+        <span class="run-title" id="run-title"></span>
+      </div>
+      <div class="run-subtitle" id="run-subtitle"></div>
+      <div class="chip-row" id="chip-row"></div>
+    </div>
+    <div class="header-actions">
+      {% if meta.runFolder %}<a class="btn" href="../index.html">All runs →</a>{% endif %}
+      <button class="btn" id="theme-toggle" type="button">Dark mode</button>
+      <button class="btn primary" id="export-json" type="button">Export JSON</button>
+    </div>
+  </header>
+
+  <section class="card command-card">
+    <div class="card-title">Command</div>
+    <code class="command-text mono" id="command-text"></code>
+    <button class="btn" id="copy-command" type="button">Copy</button>
+  </section>
+
+  <section class="kpi-strip" id="kpi-strip"></section>
+
+  <section class="charts-row">
+    <div class="card">
+      <div class="card-title" id="history-title">Last 12 runs</div>
+      <div class="history-chart" id="history-chart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Latency distribution</div>
+      <div class="latency-rows" id="latency-rows"></div>
+      <div class="p95-caption" id="p95-caption"></div>
+    </div>
+  </section>
+
+  <section class="card failure-digest">
+    <div class="card-title">Failure digest</div>
+    <div class="digest-list" id="digest-list"></div>
+  </section>
+
+  <section class="filter-bar">
+    <input class="search-input" id="search-input" type="search" placeholder="Search test name or endpoint…" />
+    <select class="filter-select" id="marker-select"></select>
+    <select class="filter-select" id="service-select"></select>
+    <button class="toggle-btn" id="failures-only" type="button">Failures only</button>
+    <span class="filter-count" id="filter-count"></span>
+  </section>
+
+  <section class="table-card">
+    <div class="table-scroll">
+      <table class="test-table">
+        <thead>
+          <tr id="table-head-row"></tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="empty-state" hidden>No tests match these filters.</div>
+  </section>
+
+  <footer class="report-footer" id="report-footer"></footer>
+
+</div>
+
+<div class="copied-toast" id="copied-toast">Copied ✓</div>
+
+<script id="run-data" type="application/json">{{ run_json }}</script>
+<script>
+(function () {
+  "use strict";
+  var RUN = JSON.parse(document.getElementById("run-data").textContent);
+  var META = RUN.meta;
+  var TESTS = RUN.tests;
+  var HISTORY = RUN.history;
+
+  /* ---------------- theme ---------------- */
+  var root = document.documentElement;
+  var themeBtn = document.getElementById("theme-toggle");
+  function applyTheme(t) {
+    if (t) { root.setAttribute("data-theme", t); } else { root.removeAttribute("data-theme"); }
+    themeBtn.textContent = currentIsDark() ? "Light mode" : "Dark mode";
+  }
+  function currentIsDark() {
+    var explicit = root.getAttribute("data-theme");
+    if (explicit) return explicit === "dark";
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  try {
+    var saved = localStorage.getItem("api-report-theme");
+    if (saved) applyTheme(saved);
+    else applyTheme(null);
+  } catch (e) { applyTheme(null); }
+  themeBtn.addEventListener("click", function () {
+    var next = currentIsDark() ? "light" : "dark";
+    applyTheme(next);
+    try { localStorage.setItem("api-report-theme", next); } catch (e) {}
+  });
+
+  /* ---------------- helpers ---------------- */
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html !== undefined) e.innerHTML = html;
+    return e;
+  }
+  function esc(s) {
+    return String(s === undefined || s === null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function fmtBody(b) {
+    if (b === null || b === undefined) return "(no body)";
+    return typeof b === "string" ? b : JSON.stringify(b, null, 2);
+  }
+  function passedAssertions(t) { return (t.assertions || []).filter(function (a) { return a.passed; }).length; }
+  function totalAssertions(t) { return (t.assertions || []).length; }
+  function failedTests() { return TESTS.filter(function (t) { return t.outcome === "fail"; }); }
+
+  /* ---------------- header ---------------- */
+  var failCount = failedTests().length;
+  var runOk = failCount === 0;
+  document.getElementById("status-dot").classList.toggle("fail", !runOk);
+  var totalAssert = TESTS.reduce(function (s, t) { return s + totalAssertions(t); }, 0);
+  var passAssert = TESTS.reduce(function (s, t) { return s + passedAssertions(t); }, 0);
+  document.getElementById("run-title").textContent =
+    (runOk ? "Run passed · " : "Run failed · ") + passAssert + " of " + totalAssert + " checks";
+  document.getElementById("run-subtitle").textContent =
+    "API regression suite — " + META.environment + " · run #" + META.runNumber;
+
+  var chipRow = document.getElementById("chip-row");
+  var chips = [
+    ["run", "#" + META.runNumber],
+    ["branch", META.branch + "@" + META.commit],
+    ["env", META.environment],
+    ["runner", META.runner],
+    ["log level", META.logLevel],
+    ["started", new Date(META.startTime).toLocaleString()],
+    ["duration", (META.durationMs / 1000).toFixed(1) + "s"]
+  ];
+  chips.forEach(function (c) {
+    chipRow.appendChild(el("span", "chip", esc(c[0]) + ": <strong>" + esc(c[1]) + "</strong>"));
+  });
+
+  document.getElementById("command-text").textContent = META.command || "pytest";
+  document.getElementById("copy-command").addEventListener("click", function () {
+    copyToClipboard(META.command || "pytest");
+  });
+
+  /* ---------------- KPI strip ---------------- */
+  var durations = TESTS.filter(function (t) { return t.durationMs; }).map(function (t) { return t.durationMs; });
+  function percentile(arr, p) {
+    if (!arr.length) return 0;
+    var sorted = arr.slice().sort(function (a, b) { return a - b; });
+    var idx = Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1);
+    return sorted[Math.max(0, idx)];
+  }
+  var avgLatency = durations.length ? Math.round(durations.reduce(function (a, b) { return a + b; }, 0) / durations.length) : 0;
+  var p95 = percentile(durations, 95);
+  var maxLatency = durations.length ? Math.max.apply(null, durations) : 0;
+  var reqFailCount = TESTS.filter(function (t) { return t.outcome === "fail"; }).length;
+  var passRate = TESTS.length ? Math.round((TESTS.filter(function (t) { return t.outcome === "pass"; }).length / TESTS.length) * 1000) / 10 : 0;
+  var prevRate = META.previousPassRate ? Math.round(META.previousPassRate * 1000) / 10 : null;
+  var delta = prevRate !== null ? Math.round((passRate - prevRate) * 10) / 10 : null;
+
+  var kpis = [
+    ["Tests", TESTS.length, reqFailCount ? reqFailCount + " failed" : "all succeeded"],
+    ["Assertions", passAssert + " / " + totalAssert, (totalAssert - passAssert) + " failing"],
+    ["Pass rate", passRate + "%", delta === null ? "no prior run" : ((delta >= 0 ? "▲ " : "▼ ") + Math.abs(delta) + "% vs previous")],
+    ["Avg latency", avgLatency + "ms", "p95 " + p95 + "ms · max " + maxLatency + "ms"],
+    ["Duration", (META.durationMs / 1000).toFixed(1) + "s", META.workerCount + " workers · " + META.retries + " retries"]
+  ];
+  var kpiStrip = document.getElementById("kpi-strip");
+  kpis.forEach(function (k) {
+    var cell = el("div", "kpi");
+    cell.appendChild(el("div", "kpi-label", esc(k[0])));
+    cell.appendChild(el("div", "kpi-value mono", esc(k[1])));
+    var sub = el("div", "kpi-sub");
+    if (k[0] === "Pass rate" && delta !== null) {
+      sub.innerHTML = (delta >= 0 ? "<span class='up'>▲ " : "<span class='down'>▼ ") + Math.abs(delta) + "%</span> vs previous";
+    } else {
+      sub.textContent = k[2];
+    }
+    cell.appendChild(sub);
+    kpiStrip.appendChild(cell);
+  });
+
+  /* ---------------- history chart ---------------- */
+  document.getElementById("history-title").textContent =
+    "Last " + HISTORY.length + " run" + (HISTORY.length === 1 ? "" : "s");
+
+  var historyEl = document.getElementById("history-chart");
+  HISTORY.forEach(function (h) {
+    var total = h.passed + h.failed + h.skipped || 1;
+    var isCurrent = h.run === META.runNumber;
+    // link to that run's own report -- except the run already on screen
+    // (nothing to navigate to) and older history entries recorded before
+    // runFolder existed (no folder to link to).
+    var isLinkable = !isCurrent && !!h.folder;
+    var col = el(isLinkable ? "a" : "div", "history-col" + (isCurrent ? " current" : "") + (isLinkable ? " linkable" : ""));
+    if (isLinkable) {
+      col.href = "../" + h.folder + "/report.html";
+      col.title = "View run #" + h.run;
+    }
+    var bars = el("div", "history-bars");
+    bars.appendChild(el("div", "seg fail", "")); bars.lastChild.style.height = (100 * h.failed / total) + "%";
+    bars.appendChild(el("div", "seg skip", "")); bars.lastChild.style.height = (100 * h.skipped / total) + "%";
+    bars.appendChild(el("div", "seg pass", "")); bars.lastChild.style.height = (100 * h.passed / total) + "%";
+    col.appendChild(bars);
+    col.appendChild(el("div", "history-run", "#" + h.run));
+    historyEl.appendChild(col);
+  });
+
+  /* ---------------- latency distribution ---------------- */
+  var buckets = [
+    [0, 150], [150, 250], [250, 400], [400, 800], [800, 1500], [1500, 3000]
+  ];
+  var counts = buckets.map(function (b) {
+    return durations.filter(function (d) { return d >= b[0] && d < b[1]; }).length;
+  });
+  var maxCount = Math.max.apply(null, counts.concat([1]));
+  var latencyRows = document.getElementById("latency-rows");
+  buckets.forEach(function (b, i) {
+    var row = el("div", "latency-row");
+    row.appendChild(el("div", "latency-bucket mono", b[0] + "–" + b[1] + "ms"));
+    var track = el("div", "latency-track");
+    var fill = el("div", "latency-fill");
+    fill.style.width = (100 * counts[i] / maxCount) + "%";
+    track.appendChild(fill);
+    row.appendChild(track);
+    row.appendChild(el("div", "latency-count mono", String(counts[i])));
+    latencyRows.appendChild(row);
+  });
+  document.getElementById("p95-caption").textContent = "p95 " + p95 + "ms across " + durations.length + " requests";
+
+  /* ---------------- failure digest ---------------- */
+  var digestList = document.getElementById("digest-list");
+  var digestItems = [];
+  TESTS.forEach(function (t) {
+    (t.assertions || []).forEach(function (a) {
+      if (!a.passed) digestItems.push({ test: t, assertion: a });
+    });
+  });
+  if (!digestItems.length) {
+    digestList.appendChild(el("div", "empty-digest", "No failing assertions in this run."));
+  } else {
+    digestItems.forEach(function (d) {
+      var row = el("button", "digest-row");
+      row.type = "button";
+      row.appendChild(el("span", "digest-mark", "✕"));
+      row.appendChild(el("span", "digest-name", esc(d.test.testName) + " — " + esc(d.assertion.name)));
+      row.appendChild(el("span", "digest-detail", "expected " + esc(d.assertion.expected) + ", got " + esc(d.assertion.actual)));
+      row.addEventListener("click", function () { jumpToTest(d.test.id); });
+      digestList.appendChild(row);
+    });
+  }
+
+  /* ---------------- filters + table ---------------- */
+  var state = { search: "", marker: "ALL", service: "ALL", failuresOnly: false, sortKey: null, sortDir: 1, expanded: {} };
+
+  function uniq(arr) { return arr.filter(function (v, i) { return arr.indexOf(v) === i; }); }
+  var markerSelect = document.getElementById("marker-select");
+  var markers = ["ALL"].concat(uniq(TESTS.map(function (t) { return t.marker; })));
+  markers.forEach(function (m) { markerSelect.appendChild(el("option", null, esc(m === "ALL" ? "All markers" : m))).value = m; });
+  markerSelect.addEventListener("change", function () { state.marker = markerSelect.value; render(); });
+
+  var serviceSelect = document.getElementById("service-select");
+  var services = ["ALL"].concat(uniq(TESTS.map(function (t) { return t.service; })));
+  services.forEach(function (s) { serviceSelect.appendChild(el("option", null, esc(s === "ALL" ? "All services" : s))).value = s; });
+  serviceSelect.addEventListener("change", function () { state.service = serviceSelect.value; render(); });
+
+  document.getElementById("search-input").addEventListener("input", function (e) {
+    state.search = e.target.value.toLowerCase();
+    render();
+  });
+
+  var failBtn = document.getElementById("failures-only");
+  failBtn.addEventListener("click", function () {
+    state.failuresOnly = !state.failuresOnly;
+    failBtn.classList.toggle("active", state.failuresOnly);
+    render();
+  });
+
+  var columns = [
+    { key: "outcome", label: "Result" },
+    { key: "testName", label: "Test" },
+    { key: "statusCode", label: "Code" },
+    { key: "durationMs", label: "Latency" },
+    { key: "assertions", label: "Assertions" },
+    { key: null, label: "" }
+  ];
+  var headRow = document.getElementById("table-head-row");
+  columns.forEach(function (c) {
+    var th = el("th");
+    if (c.key) {
+      var btn = el("button", "sort-btn", esc(c.label) + " <span class='arrow'>▲</span>");
+      btn.type = "button";
+      btn.addEventListener("click", function () {
+        if (state.sortKey === c.key) state.sortDir *= -1; else { state.sortKey = c.key; state.sortDir = 1; }
+        render();
+      });
+      th.appendChild(btn);
+    } else {
+      th.textContent = c.label;
+    }
+    headRow.appendChild(th);
+  });
+
+  function matches(t) {
+    if (state.failuresOnly && t.outcome !== "fail") return false;
+    if (state.marker !== "ALL" && t.marker !== state.marker) return false;
+    if (state.service !== "ALL" && t.service !== state.service) return false;
+    if (state.search) {
+      var hay = (t.testName + " " + (t.path || "")).toLowerCase();
+      if (hay.indexOf(state.search) === -1) return false;
+    }
+    return true;
+  }
+
+  function sortValue(t, key) {
+    if (key === "outcome") return { pass: 0, fail: 1, skip: 2 }[t.outcome];
+    if (key === "assertions") return passedAssertions(t) / (totalAssertions(t) || 1);
+    return t[key] === null || t[key] === undefined ? -1 : t[key];
+  }
+
+  function latencyClass(ms) {
+    if (ms === null || ms === undefined) return "";
+    if (ms > META.latencyBudgetMs * 1.875 || ms > 800) return "bad";
+    if (ms > 400) return "warn";
+    return "";
+  }
+
+  var tbody = document.getElementById("table-body");
+  var emptyState = document.getElementById("empty-state");
+  var filterCount = document.getElementById("filter-count");
+
+  function groupBySuite(list) {
+    var groups = {};
+    var order = [];
+    list.forEach(function (t) {
+      if (!groups[t.suite]) { groups[t.suite] = []; order.push(t.suite); }
+      groups[t.suite].push(t);
+    });
+    return order.map(function (k) { return { suite: k, items: groups[k] }; });
+  }
+
+  function buildAssertionRow(a) {
+    var item = el("div", "assertion-item " + (a.passed ? "pass" : "fail"));
+    item.appendChild(el("div", "assertion-mark", a.passed ? "✓" : "✕"));
+    item.appendChild(el("div", "assertion-title", esc(a.name)));
+    item.appendChild(el("div", "assertion-ea", "expected " + esc(a.expected) + " · actual " + esc(a.actual)));
+    if (a.violations && a.violations.length) {
+      var vl = el("div", "violation-list");
+      vl.innerHTML = a.violations.map(function (v) { return esc(v.path) + " — " + esc(v.problem); }).join("<br>");
+      item.appendChild(vl);
+    }
+    return item;
+  }
+
+  function buildCurl(call) {
+    if (!call.request) return "";
+    var parts = ["curl -X " + call.method, "'" + call.request.url + "'"];
+    Object.keys(call.request.headers || {}).forEach(function (h) {
+      parts.push("-H '" + h + ": " + call.request.headers[h] + "'");
+    });
+    if (call.request.body) parts.push("-d '" + JSON.stringify(call.request.body).replace(/'/g, "'\\''") + "'");
+    return parts.join(" \\\n  ");
+  }
+
+  function buildCallPanel(call) {
+    var section = el("div", "call-block");
+    var attemptSuffix = call.attempt > 1 ? ", attempt " + call.attempt + "/" + call.maxAttempts : "";
+    section.appendChild(el(
+      "div", "call-heading",
+      "<span class='method-badge " + esc(call.method) + "'>" + esc(call.method) + "</span>" +
+      "<span class='path-mono'>" + esc(call.path) + "</span>" +
+      "<span class='call-status mono'>&rarr; " + esc(call.statusCode) + " &middot; " + esc(call.durationMs) + "ms" + esc(attemptSuffix) + "</span>"
+    ));
+
+    if (call.request || call.response) {
+      var grid = el("div", "reqres-grid");
+
+      var reqPanel = el("div", "reqres-panel");
+      reqPanel.appendChild(el("h4", null, "Request"));
+      var reqKv = el("div", "kv-list");
+      reqKv.appendChild(el("div", "kv", "<span class='k'>method</span><span class='v mono'>" + esc(call.method) + "</span>"));
+      reqKv.appendChild(el("div", "kv", "<span class='k'>url</span><span class='v mono'>" + esc(call.request.url) + "</span>"));
+      reqKv.appendChild(el("div", "kv", "<span class='k'>attempt</span><span class='v mono'>" + esc(call.request.attempt) + "</span>"));
+      Object.keys(call.request.headers || {}).forEach(function (h) {
+        reqKv.appendChild(el("div", "kv", "<span class='k'>" + esc(h) + "</span><span class='v mono'>" + esc(call.request.headers[h]) + "</span>"));
+      });
+      reqPanel.appendChild(reqKv);
+      reqPanel.appendChild(el("pre", "body-pre", esc(fmtBody(call.request.body))));
+      var curlBtn = el("button", "btn curl-btn", "Copy as cURL");
+      curlBtn.type = "button";
+      curlBtn.addEventListener("click", function () { copyToClipboard(buildCurl(call)); });
+      reqPanel.appendChild(curlBtn);
+      grid.appendChild(reqPanel);
+
+      var resPanel = el("div", "reqres-panel");
+      resPanel.appendChild(el("h4", null, "Response"));
+      var resKv = el("div", "kv-list");
+      resKv.appendChild(el("div", "kv", "<span class='k'>status</span><span class='v mono'>" + esc(call.statusCode) + "</span>"));
+      Object.keys((call.response && call.response.headers) || {}).forEach(function (h) {
+        resKv.appendChild(el("div", "kv", "<span class='k'>" + esc(h) + "</span><span class='v mono'>" + esc(call.response.headers[h]) + "</span>"));
+      });
+      resPanel.appendChild(resKv);
+      resPanel.appendChild(el("pre", "body-pre", esc(fmtBody(call.response && call.response.body))));
+      grid.appendChild(resPanel);
+
+      section.appendChild(grid);
+    }
+
+    return section;
+  }
+
+  function buildDetail(t) {
+    var wrap = el("div", "detail-inner");
+
+    if (t.assertions && t.assertions.length) {
+      var aSec = el("div");
+      aSec.appendChild(el("div", "detail-section-title", "Assertions"));
+      var list = el("div", "assertion-list");
+      t.assertions.forEach(function (a) { list.appendChild(buildAssertionRow(a)); });
+      aSec.appendChild(list);
+      wrap.appendChild(aSec);
+    }
+
+    if (t.calls && t.calls.length) {
+      var rSec = el("div");
+      var callWord = t.calls.length === 1 ? "call" : "calls";
+      rSec.appendChild(el("div", "detail-section-title", "Requests (" + t.calls.length + " " + callWord + ")"));
+      t.calls.forEach(function (call) { rSec.appendChild(buildCallPanel(call)); });
+      wrap.appendChild(rSec);
+    }
+
+    if (t.logs && t.logs.length) {
+      var lSec = el("div");
+      var logToggle = el("button", "detail-section-title log-toggle", "Runner log (" + t.logs.length + ") <span class='caret'>›</span>");
+      logToggle.type = "button";
+      lSec.appendChild(logToggle);
+
+      var logList = el("div", "log-list");
+      logList.hidden = true; // collapsed by default
+      t.logs.forEach(function (l) {
+        var line = el("div", "log-line " + l.level);
+        line.appendChild(el("span", "ts", esc(l.ts)));
+        var phaseTag = l.phase ? "<span class='log-phase log-phase-" + esc(l.phase) + "'>[" + esc(l.phase) + "]</span> " : "";
+        line.appendChild(el("span", null, phaseTag + esc(l.message)));
+        logList.appendChild(line);
+      });
+      lSec.appendChild(logList);
+
+      logToggle.addEventListener("click", function () {
+        logList.hidden = !logList.hidden;
+        logToggle.classList.toggle("expanded", !logList.hidden);
+      });
+
+      wrap.appendChild(lSec);
+    }
+
+    return wrap;
+  }
+
+  function renderRow(t) {
+    var row = el("tr", "test-row" + (t.outcome === "fail" ? " fail" : "") + (state.expanded[t.id] ? " expanded" : ""));
+    row.dataset.id = t.id;
+
+    var tdResult = el("td");
+    tdResult.appendChild(el("span", "pill " + t.outcome, t.outcome === "skip" ? "SKIP" : (t.outcome === "pass" ? "PASS" : "FAIL")));
+    row.appendChild(tdResult);
+
+    var tdTest = el("td", "test-name-cell");
+    tdTest.appendChild(el("div", "test-name", esc(t.testName)));
+    var sub = el("div", "test-sub");
+    if (t.method) sub.appendChild(el("span", "method-badge " + t.method, esc(t.method)));
+    sub.appendChild(el("span", "path-mono", esc(t.path || "")));
+    tdTest.appendChild(sub);
+    row.appendChild(tdTest);
+
+    row.appendChild(el("td", "code-cell mono", t.statusCode === null ? "—" : esc(t.statusCode)));
+
+    var latCell = el("td", "latency-cell mono " + latencyClass(t.durationMs), t.durationMs ? t.durationMs + "ms" : "—");
+    row.appendChild(latCell);
+
+    row.appendChild(el("td", "assertions-cell", totalAssertions(t) ? (passedAssertions(t) + " / " + totalAssertions(t)) : "—"));
+
+    row.appendChild(el("td", "caret-cell", "<span class='caret'>›</span>"));
+
+    row.addEventListener("click", function () {
+      state.expanded[t.id] = !state.expanded[t.id];
+      render();
+    });
+
+    return row;
+  }
+
+  function render() {
+    var filtered = TESTS.filter(matches);
+    if (state.sortKey) {
+      filtered.sort(function (a, b) {
+        var av = sortValue(a, state.sortKey), bv = sortValue(b, state.sortKey);
+        if (av < bv) return -1 * state.sortDir;
+        if (av > bv) return 1 * state.sortDir;
+        return 0;
+      });
+    }
+    filterCount.textContent = filtered.length + " of " + TESTS.length + " shown";
+
+    Array.prototype.forEach.call(headRow.querySelectorAll(".sort-btn"), function (btn, i) {
+      var key = columns[i].key;
+      var isSorted = key && key === state.sortKey;
+      btn.classList.toggle("sorted", !!isSorted);
+      var arrow = btn.querySelector(".arrow");
+      if (isSorted) arrow.textContent = state.sortDir === 1 ? "▲" : "▼";
+    });
+
+    tbody.innerHTML = "";
+    if (!filtered.length) {
+      emptyState.hidden = false;
+    } else {
+      emptyState.hidden = true;
+      var groups = groupBySuite(filtered);
+      groups.forEach(function (g) {
+        var gRow = el("tr", "group-row");
+        var gTd = el("td");
+        gTd.colSpan = columns.length;
+        gTd.innerHTML = esc(g.suite) + " <span class='count'>(" + g.items.length + ")</span>";
+        gRow.appendChild(gTd);
+        tbody.appendChild(gRow);
+        g.items.forEach(function (t) {
+          tbody.appendChild(renderRow(t));
+          if (state.expanded[t.id]) {
+            var dRow = el("tr", "detail-row");
+            var dTd = el("td");
+            dTd.colSpan = columns.length;
+            dTd.appendChild(buildDetail(t));
+            dRow.appendChild(dTd);
+            tbody.appendChild(dRow);
+          }
+        });
+      });
+    }
+  }
+
+  function jumpToTest(id) {
+    state.failuresOnly = false;
+    failBtn.classList.remove("active");
+    state.expanded[id] = true;
+    render();
+    var rowEl = tbody.querySelector("tr[data-id='" + id + "']");
+    if (rowEl) rowEl.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  render();
+
+  /* ---------------- copy / export ---------------- */
+  var toast = document.getElementById("copied-toast");
+  function copyToClipboard(text) {
+    var done = function () {
+      toast.classList.add("show");
+      setTimeout(function () { toast.classList.remove("show"); }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, done);
+    } else {
+      done();
+    }
+  }
+
+  document.getElementById("export-json").addEventListener("click", function () {
+    copyToClipboard(JSON.stringify(RUN, null, 2));
+    toast.textContent = "JSON copied ✓";
+    setTimeout(function () { toast.textContent = "Copied ✓"; }, 1500);
+  });
+
+  /* ---------------- footer ---------------- */
+  var footer = document.getElementById("report-footer");
+  var footerItems = [
+    ["Base URL", META.baseUrl],
+    ["Auth", META.authMode + " (" + META.maskedToken + ")"],
+    ["Retries", META.retries],
+    ["Timeout", META.timeoutSeconds + "s"],
+    ["Artifact retention", META.artifactRetentionDays + " days"]
+  ];
+  footerItems.forEach(function (f) {
+    footer.appendChild(el("span", null, esc(f[0]) + ": <b>" + esc(f[1]) + "</b>"));
+  });
+})();
+</script>
+</body>
+</html>

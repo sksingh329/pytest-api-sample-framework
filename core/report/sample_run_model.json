@@ -1,0 +1,831 @@
+{
+  "meta": {
+    "runNumber": 47,
+    "runFolder": "20260822-091402",
+    "command": "pytest tests/regression tests/contract -m \"regression or contract\" -v",
+    "branch": "main",
+    "commit": "a1b2c3d",
+    "environment": "dev",
+    "baseUrl": "https://api.example.com",
+    "runner": "pytest 7.4.4 / api-test-core 0.1.0",
+    "logLevel": "INFO",
+    "startTime": "2026-08-22T09:14:02Z",
+    "durationMs": 18420,
+    "workerCount": 4,
+    "retries": 2,
+    "timeoutSeconds": 30,
+    "authMode": "bearer (role: default)",
+    "maskedToken": "8f2a...c91d",
+    "artifactRetentionDays": 30,
+    "previousPassRate": 0.91
+  },
+  "history": [
+    {
+      "run": 36,
+      "passed": 40,
+      "failed": 3,
+      "skipped": 1
+    },
+    {
+      "run": 37,
+      "passed": 42,
+      "failed": 1,
+      "skipped": 1,
+      "folder": "20260817-090100"
+    },
+    {
+      "run": 38,
+      "passed": 41,
+      "failed": 2,
+      "skipped": 1,
+      "folder": "20260818-090200"
+    },
+    {
+      "run": 39,
+      "passed": 43,
+      "failed": 0,
+      "skipped": 1,
+      "folder": "20260818-140300"
+    },
+    {
+      "run": 40,
+      "passed": 39,
+      "failed": 4,
+      "skipped": 1,
+      "folder": "20260819-090400"
+    },
+    {
+      "run": 41,
+      "passed": 42,
+      "failed": 1,
+      "skipped": 1,
+      "folder": "20260819-140500"
+    },
+    {
+      "run": 42,
+      "passed": 43,
+      "failed": 0,
+      "skipped": 1,
+      "folder": "20260820-090600"
+    },
+    {
+      "run": 43,
+      "passed": 40,
+      "failed": 3,
+      "skipped": 1,
+      "folder": "20260820-140700"
+    },
+    {
+      "run": 44,
+      "passed": 41,
+      "failed": 2,
+      "skipped": 1,
+      "folder": "20260821-090800"
+    },
+    {
+      "run": 45,
+      "passed": 43,
+      "failed": 0,
+      "skipped": 1,
+      "folder": "20260821-140900"
+    },
+    {
+      "run": 46,
+      "passed": 42,
+      "failed": 1,
+      "skipped": 1,
+      "folder": "20260822-091000"
+    },
+    {
+      "run": 47,
+      "passed": 39,
+      "failed": 4,
+      "skipped": 1,
+      "folder": "20260822-091402"
+    }
+  ],
+  "tests": [
+    {
+      "id": "t1",
+      "testName": "test_create_user_returns_201_with_valid_body",
+      "suite": "regression/test_users_create.py",
+      "marker": "regression",
+      "service": "users",
+      "method": "POST",
+      "path": "/v1/users",
+      "statusCode": 201,
+      "durationMs": 142,
+      "responseSize": 386,
+      "outcome": "pass",
+      "assertions": [
+        {
+          "name": "assert_status",
+          "passed": true,
+          "expected": "201",
+          "actual": "201",
+          "kind": "status"
+        },
+        {
+          "name": "assert_field_present(id)",
+          "passed": true,
+          "expected": "present & non-null",
+          "actual": "usr_8x02q",
+          "kind": "field"
+        },
+        {
+          "name": "assert_field(status, \"active\")",
+          "passed": true,
+          "expected": "active",
+          "actual": "active",
+          "kind": "field"
+        },
+        {
+          "name": "assert_schema(user.created.v2)",
+          "passed": true,
+          "expected": "0 violations",
+          "actual": "0 violations",
+          "kind": "schema",
+          "violations": []
+        },
+        {
+          "name": "assert_response_time(<= 800ms)",
+          "passed": true,
+          "expected": "<= 800ms",
+          "actual": "142ms",
+          "kind": "latency"
+        }
+      ],
+      "logs": [
+        {
+          "ts": "09:14:03.101",
+          "level": "info",
+          "message": "POST /v1/users -> 201 (142ms, attempt 1/3)"
+        },
+        {
+          "ts": "09:14:03.104",
+          "level": "pass",
+          "message": "assert_status: expected 201, got 201"
+        },
+        {
+          "ts": "09:14:03.106",
+          "level": "pass",
+          "message": "assert_field_present(id): usr_8x02q"
+        },
+        {
+          "ts": "09:14:03.108",
+          "level": "pass",
+          "message": "assert_schema(user.created.v2): 0 violations"
+        },
+        {
+          "ts": "09:14:03.109",
+          "level": "pass",
+          "message": "assert_response_time: 142ms <= 800ms budget"
+        }
+      ],
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/users",
+          "statusCode": 201,
+          "durationMs": 142,
+          "attempt": 1,
+          "maxAttempts": 3,
+          "request": {
+            "url": "https://api.example.com/v1/users",
+            "headers": {
+              "Authorization": "Bearer 8f2a...c91d",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "email": "priya.nair@example.com",
+              "role": "member",
+              "full_name": "Priya Nair"
+            },
+            "attempt": 1
+          },
+          "response": {
+            "headers": {
+              "content-type": "application/json",
+              "x-request-id": "req_9f13ac"
+            },
+            "body": {
+              "id": "usr_8x02q",
+              "email": "priya.nair@example.com",
+              "status": "active",
+              "created_at": "2026-08-22T09:14:03Z"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t2",
+      "testName": "test_create_user_rejects_duplicate_email",
+      "suite": "regression/test_users_create.py",
+      "marker": "regression",
+      "service": "users",
+      "method": "POST",
+      "path": "/v1/users",
+      "statusCode": 409,
+      "durationMs": 96,
+      "responseSize": 118,
+      "outcome": "pass",
+      "assertions": [
+        {
+          "name": "assert_status",
+          "passed": true,
+          "expected": "409",
+          "actual": "409",
+          "kind": "status"
+        },
+        {
+          "name": "assert_field(error.code, \"duplicate_email\")",
+          "passed": true,
+          "expected": "duplicate_email",
+          "actual": "duplicate_email",
+          "kind": "field"
+        }
+      ],
+      "logs": [
+        {
+          "ts": "09:14:03.220",
+          "level": "info",
+          "message": "POST /v1/users -> 409 (96ms, attempt 1/3)"
+        },
+        {
+          "ts": "09:14:03.222",
+          "level": "pass",
+          "message": "assert_status: expected 409, got 409"
+        },
+        {
+          "ts": "09:14:03.223",
+          "level": "pass",
+          "message": "assert_field(error.code): duplicate_email"
+        }
+      ],
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/users",
+          "statusCode": 409,
+          "durationMs": 96,
+          "attempt": 1,
+          "maxAttempts": 3,
+          "request": {
+            "url": "https://api.example.com/v1/users",
+            "headers": {
+              "Authorization": "Bearer 8f2a...c91d",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "email": "priya.nair@example.com",
+              "role": "member",
+              "full_name": "Priya Nair"
+            },
+            "attempt": 1
+          },
+          "response": {
+            "headers": {
+              "content-type": "application/json"
+            },
+            "body": {
+              "error": {
+                "code": "duplicate_email",
+                "message": "email already registered"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t3",
+      "testName": "test_get_user_by_id_matches_contract",
+      "suite": "contract/test_users_contract.py",
+      "marker": "contract",
+      "service": "users",
+      "method": "GET",
+      "path": "/v1/users/usr_8x02q",
+      "statusCode": 200,
+      "durationMs": 611,
+      "responseSize": 402,
+      "outcome": "fail",
+      "assertions": [
+        {
+          "name": "assert_status",
+          "passed": true,
+          "expected": "200",
+          "actual": "200",
+          "kind": "status"
+        },
+        {
+          "name": "assert_schema(user.v2)",
+          "passed": false,
+          "expected": "fields match user.v2 contract",
+          "actual": "1 violation",
+          "kind": "schema",
+          "violations": [
+            {
+              "path": "$.last_login_ip",
+              "problem": "unexpected field not in contract"
+            }
+          ]
+        },
+        {
+          "name": "assert_response_time(<= 800ms)",
+          "passed": true,
+          "expected": "<= 800ms",
+          "actual": "611ms",
+          "kind": "latency"
+        }
+      ],
+      "logs": [
+        {
+          "ts": "09:14:03.980",
+          "level": "warn",
+          "message": "latency 611ms exceeds nothing yet, within 800ms budget"
+        },
+        {
+          "ts": "09:14:03.981",
+          "level": "info",
+          "message": "GET /v1/users/usr_8x02q -> 200 (611ms, attempt 1/3)"
+        },
+        {
+          "ts": "09:14:03.983",
+          "level": "pass",
+          "message": "assert_status: expected 200, got 200"
+        },
+        {
+          "ts": "09:14:03.986",
+          "level": "fail",
+          "message": "assert_schema(user.v2): unexpected field $.last_login_ip"
+        },
+        {
+          "ts": "09:14:03.987",
+          "level": "fail",
+          "message": "AssertionError: schema drift detected, 1 unexpected field"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/v1/users/usr_8x02q",
+          "statusCode": 200,
+          "durationMs": 611,
+          "attempt": 1,
+          "maxAttempts": 3,
+          "request": {
+            "url": "https://api.example.com/v1/users/usr_8x02q",
+            "headers": {
+              "Authorization": "Bearer 8f2a...c91d"
+            },
+            "body": null,
+            "attempt": 1
+          },
+          "response": {
+            "headers": {
+              "content-type": "application/json"
+            },
+            "body": {
+              "id": "usr_8x02q",
+              "email": "priya.nair@example.com",
+              "status": "active",
+              "last_login_ip": "203.0.113.42"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t4",
+      "testName": "test_list_orders_is_paginated_and_sorted",
+      "suite": "regression/test_orders_list.py",
+      "marker": "regression",
+      "service": "orders",
+      "method": "GET",
+      "path": "/v1/orders?page=1&size=20",
+      "statusCode": 200,
+      "durationMs": 233,
+      "responseSize": 2140,
+      "outcome": "pass",
+      "assertions": [
+        {
+          "name": "assert_status",
+          "passed": true,
+          "expected": "200",
+          "actual": "200",
+          "kind": "status"
+        },
+        {
+          "name": "assert_list(items, length<=20)",
+          "passed": true,
+          "expected": "len <= 20",
+          "actual": "len = 20",
+          "kind": "list"
+        },
+        {
+          "name": "assert_list(items, sorted by created_at desc)",
+          "passed": true,
+          "expected": "descending",
+          "actual": "descending",
+          "kind": "list"
+        },
+        {
+          "name": "assert_list(items, unique by id)",
+          "passed": true,
+          "expected": "unique",
+          "actual": "unique",
+          "kind": "list"
+        }
+      ],
+      "logs": [
+        {
+          "ts": "09:14:04.311",
+          "level": "info",
+          "message": "GET /v1/orders?page=1&size=20 -> 200 (233ms, attempt 1/3)"
+        },
+        {
+          "ts": "09:14:04.313",
+          "level": "pass",
+          "message": "assert_list length: 20 <= 20"
+        },
+        {
+          "ts": "09:14:04.314",
+          "level": "pass",
+          "message": "assert_list sort order: descending by created_at"
+        },
+        {
+          "ts": "09:14:04.315",
+          "level": "pass",
+          "message": "assert_list uniqueness: no duplicate ids"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/v1/orders?page=1&size=20",
+          "statusCode": 200,
+          "durationMs": 233,
+          "attempt": 1,
+          "maxAttempts": 3,
+          "request": {
+            "url": "https://api.example.com/v1/orders?page=1&size=20",
+            "headers": {
+              "Authorization": "Bearer 8f2a...c91d"
+            },
+            "body": null,
+            "attempt": 1
+          },
+          "response": {
+            "headers": {
+              "content-type": "application/json"
+            },
+            "body": {
+              "items": "[20 items]",
+              "page": 1,
+              "total": 214
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t5",
+      "testName": "test_create_order_retries_through_transient_503",
+      "suite": "regression/test_orders_create.py",
+      "marker": "regression",
+      "service": "orders",
+      "method": "POST",
+      "path": "/v1/orders",
+      "statusCode": 201,
+      "durationMs": 1180,
+      "responseSize": 310,
+      "outcome": "pass",
+      "assertions": [
+        {
+          "name": "assert_status",
+          "passed": true,
+          "expected": "201",
+          "actual": "201",
+          "kind": "status"
+        },
+        {
+          "name": "assert_field_present(id)",
+          "passed": true,
+          "expected": "present & non-null",
+          "actual": "ord_44f0z",
+          "kind": "field"
+        }
+      ],
+      "logs": [
+        {
+          "ts": "09:14:04.600",
+          "level": "warn",
+          "message": "POST /v1/orders -> 503 (attempt 1/3), retrying in 0.25s"
+        },
+        {
+          "ts": "09:14:04.900",
+          "level": "warn",
+          "message": "POST /v1/orders -> 503 (attempt 2/3), retrying in 0.5s"
+        },
+        {
+          "ts": "09:14:05.780",
+          "level": "info",
+          "message": "POST /v1/orders -> 201 (attempt 3/3, 1180ms total)"
+        },
+        {
+          "ts": "09:14:05.782",
+          "level": "pass",
+          "message": "assert_status: expected 201, got 201"
+        },
+        {
+          "ts": "09:14:05.783",
+          "level": "pass",
+          "message": "assert_field_present(id): ord_44f0z"
+        }
+      ],
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/v1/orders",
+          "statusCode": 201,
+          "durationMs": 1180,
+          "attempt": 3,
+          "maxAttempts": 3,
+          "request": {
+            "url": "https://api.example.com/v1/orders",
+            "headers": {
+              "Authorization": "Bearer 8f2a...c91d",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "user_id": "usr_8x02q",
+              "sku": "SKU-2201",
+              "qty": 2
+            },
+            "attempt": 3
+          },
+          "response": {
+            "headers": {
+              "content-type": "application/json"
+            },
+            "body": {
+              "id": "ord_44f0z",
+              "status": "created"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t6",
+      "testName": "test_update_order_quantity_rejects_zero",
+      "suite": "regression/test_orders_update.py",
+      "marker": "regression",
+      "service": "orders",
+      "method": "PATCH",
+      "path": "/v1/orders/ord_44f0z",
+      "statusCode": 422,
+      "durationMs": 88,
+      "responseSize": 96,
+      "outcome": "pass",
+      "assertions": [
+        {
+          "name": "assert_status",
+          "passed": true,
+          "expected": "422",
+          "actual": "422",
+          "kind": "status"
+        },
+        {
+          "name": "assert_field(error.field, \"qty\")",
+          "passed": true,
+          "expected": "qty",
+          "actual": "qty",
+          "kind": "field"
+        }
+      ],
+      "logs": [
+        {
+          "ts": "09:14:05.900",
+          "level": "info",
+          "message": "PATCH /v1/orders/ord_44f0z -> 422 (88ms, attempt 1/3)"
+        },
+        {
+          "ts": "09:14:05.902",
+          "level": "pass",
+          "message": "assert_status: expected 422, got 422"
+        },
+        {
+          "ts": "09:14:05.903",
+          "level": "pass",
+          "message": "assert_field(error.field): qty"
+        }
+      ],
+      "calls": [
+        {
+          "method": "PATCH",
+          "path": "/v1/orders/ord_44f0z",
+          "statusCode": 422,
+          "durationMs": 88,
+          "attempt": 1,
+          "maxAttempts": 3,
+          "request": {
+            "url": "https://api.example.com/v1/orders/ord_44f0z",
+            "headers": {
+              "Authorization": "Bearer 8f2a...c91d",
+              "Content-Type": "application/json"
+            },
+            "body": {
+              "qty": 0
+            },
+            "attempt": 1
+          },
+          "response": {
+            "headers": {
+              "content-type": "application/json"
+            },
+            "body": {
+              "error": {
+                "field": "qty",
+                "message": "must be >= 1"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t7",
+      "testName": "test_delete_order_as_viewer_role_is_forbidden",
+      "suite": "regression/test_orders_permissions.py",
+      "marker": "regression",
+      "service": "orders",
+      "method": "DELETE",
+      "path": "/v1/orders/ord_44f0z",
+      "statusCode": 200,
+      "durationMs": 121,
+      "responseSize": 64,
+      "outcome": "fail",
+      "assertions": [
+        {
+          "name": "assert_status",
+          "passed": false,
+          "expected": "403",
+          "actual": "200",
+          "kind": "status"
+        }
+      ],
+      "logs": [
+        {
+          "ts": "09:14:06.050",
+          "level": "info",
+          "message": "DELETE /v1/orders/ord_44f0z -> 200 (121ms, attempt 1/3)"
+        },
+        {
+          "ts": "09:14:06.052",
+          "level": "fail",
+          "message": "assert_status: expected 403, got 200"
+        },
+        {
+          "ts": "09:14:06.053",
+          "level": "fail",
+          "message": "AssertionError: viewer role deleted an order it should not be able to touch"
+        }
+      ],
+      "calls": [
+        {
+          "method": "DELETE",
+          "path": "/v1/orders/ord_44f0z",
+          "statusCode": 200,
+          "durationMs": 121,
+          "attempt": 1,
+          "maxAttempts": 3,
+          "request": {
+            "url": "https://api.example.com/v1/orders/ord_44f0z",
+            "headers": {
+              "Authorization": "Bearer 71ee...0a4b",
+              "Content-Type": "application/json"
+            },
+            "body": null,
+            "attempt": 1
+          },
+          "response": {
+            "headers": {
+              "content-type": "application/json"
+            },
+            "body": {
+              "id": "ord_44f0z",
+              "status": "deleted"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t8",
+      "testName": "test_orders_contract_has_no_undocumented_fields",
+      "suite": "contract/test_orders_contract.py",
+      "marker": "contract",
+      "service": "orders",
+      "method": "GET",
+      "path": "/v1/orders/ord_44f0z",
+      "statusCode": 200,
+      "durationMs": 2340,
+      "responseSize": 288,
+      "outcome": "fail",
+      "assertions": [
+        {
+          "name": "assert_status",
+          "passed": true,
+          "expected": "200",
+          "actual": "200",
+          "kind": "status"
+        },
+        {
+          "name": "assert_response_time(<= 800ms)",
+          "passed": false,
+          "expected": "<= 800ms",
+          "actual": "2340ms",
+          "kind": "latency"
+        }
+      ],
+      "logs": [
+        {
+          "ts": "09:14:07.100",
+          "level": "warn",
+          "message": "latency 2340ms exceeds 800ms budget"
+        },
+        {
+          "ts": "09:14:07.101",
+          "level": "info",
+          "message": "GET /v1/orders/ord_44f0z -> 200 (2340ms, attempt 1/3)"
+        },
+        {
+          "ts": "09:14:07.102",
+          "level": "pass",
+          "message": "assert_status: expected 200, got 200"
+        },
+        {
+          "ts": "09:14:07.103",
+          "level": "fail",
+          "message": "assert_response_time: 2340ms > 800ms budget"
+        },
+        {
+          "ts": "09:14:07.104",
+          "level": "fail",
+          "message": "AssertionError: latency budget exceeded"
+        }
+      ],
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/v1/orders/ord_44f0z",
+          "statusCode": 200,
+          "durationMs": 2340,
+          "attempt": 1,
+          "maxAttempts": 3,
+          "request": {
+            "url": "https://api.example.com/v1/orders/ord_44f0z",
+            "headers": {
+              "Authorization": "Bearer 8f2a...c91d"
+            },
+            "body": null,
+            "attempt": 1
+          },
+          "response": {
+            "headers": {
+              "content-type": "application/json"
+            },
+            "body": {
+              "id": "ord_44f0z",
+              "status": "deleted"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "t9",
+      "testName": "test_orders_export_csv_is_not_yet_supported",
+      "suite": "regression/test_orders_export.py",
+      "marker": "regression",
+      "service": "orders",
+      "method": "GET",
+      "path": "/v1/orders/export.csv",
+      "statusCode": null,
+      "durationMs": 0,
+      "responseSize": 0,
+      "outcome": "skip",
+      "assertions": [],
+      "logs": [
+        {
+          "ts": "09:14:07.200",
+          "level": "info",
+          "message": "SKIPPED: csv export endpoint not on this environment (JIRA-4821)"
+        }
+      ],
+      "calls": []
+    }
+  ]
+}

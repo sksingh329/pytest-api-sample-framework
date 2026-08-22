@@ -1,0 +1,20 @@
+# Runtime + test dependencies for the framework.
+# Install with: pip install -r requirements-test.txt
+# No packaging/build step -- core/ and api/ are plain packages imported
+# straight off the repo root (see the top-level conftest.py), and
+# core.plugin is loaded explicitly via pytest.ini's addopts.
+
+pytest>=7.4
+requests>=2.31
+python-dotenv>=1.0
+
+# used from M4 onward (report rendering, schema contracts, YAML data tables)
+pytest-xdist>=3.5
+jinja2>=3.1
+pyyaml>=6.0
+
+# schema contracts are plain pydantic models (api/schemas/*.py), not JSON
+# Schema files -- see core/schemas.py. email-validator backs pydantic's
+# EmailStr.
+pydantic>=2.5
+email-validator>=2.1
