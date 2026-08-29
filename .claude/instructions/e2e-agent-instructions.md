@@ -26,8 +26,11 @@ alongside the existing single-call tests (see [tests/users/test_users.py](../tes
   test type.
 - File naming: `test_<feature>_e2e.py` (e.g. `tests/users/test_users_e2e.py`),
   mirroring the existing `test_<feature>.py` / `test_<feature>_auth.py` pattern.
-- One module of plain `test_*` functions, matching the existing files — no test
-  classes unless the codebase introduces them elsewhere first.
+- Every test is a method inside a class — pipeline-generated code has no standalone
+  `test_*` functions. All E2E tests for one file share one class; see "Naming" below
+  for the class name. (The hand-written files this pattern mirrors — `test_users.py`,
+  `test_users_auth.py` — predate this convention and stay as plain functions;
+  `test-creator` never retrofits them, it only ever writes new files this way.)
 
 ## Build order for a new resource
 
@@ -56,9 +59,15 @@ layer, which this framework never does.
 
 ## Structure of an E2E test
 
-- Each test gets a short comment (not a docstring) citing its `test_id` above
-  the `def` line (e.g. `# TC-010: create a user, verify it via GET, update it,
-  then confirm deletion.`).
+- Each test method gets a **docstring** (never a comment above the method) restating its
+  `test_name` with a one-line description, e.g.:
+  ```python
+  def test_create_then_update_then_delete_user_e2e(self, users_service, cleanup_users):
+      """test_create_then_update_then_delete_user_e2e: create a user, verify it via
+      GET, update it, then confirm deletion."""
+  ```
+  There is no separate id scheme — `test_name` is the test's identity, so the docstring exists
+  for traceability when grepping generated code or reports, not to introduce a second name.
 - Arrange only through existing fixtures (`users_service`, `token_provider`,
   `created_user`, `cleanup_users`, etc. from [tests/conftest.py](../tests/conftest.py))
   and the payload builder under `api/payloads/` (e.g.
@@ -94,8 +103,9 @@ layer, which this framework never does.
 - `test_name`: `test_<verb>_<...>_e2e` describing the journey, e.g.
   `test_create_then_update_then_delete_user_e2e`.
 - `file_name`: `test_<feature>_e2e.py`.
-- `class_name`: always `n/a` — this repo has no test classes anywhere, only
-  plain `test_*` functions.
+- `class_name`: `Test<Feature>E2E` (e.g. `TestUsersE2E` for `tests/users/test_users_e2e.py`).
+  Every E2E `test_name` for a given `file_name` shares this same `class_name` — one class per
+  file, holding all of that file's E2E test methods.
 
 These are derived the same way every time from the feature/module name and
 scenario, per the QA Agent's fixed naming-derivation rule — testcase-writer and
@@ -103,9 +113,9 @@ test-creator must not invent alternate forms.
 
 ## Traceability
 
-Same rule as the rest of the QA Agent pipeline: the `test_id` comment above
-each test is how test-review and execution-review match generated E2E test
-code back to `testcase.md` and `plan.md`. Every E2E test must carry one.
+Same rule as the rest of the QA Agent pipeline: the `test_name` docstring on
+each test method is how test-review and execution-review match generated E2E
+test code back to `testcase.md` and `plan.md`. Every E2E test must carry one.
 
 ## What NOT to do
 

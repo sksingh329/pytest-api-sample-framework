@@ -11,10 +11,14 @@ prompt assumes the shared context below is already loaded.
 You are generating a SKILL.md for the QA Agent pipeline in this repo.
 
 Ground rules that apply to every skill:
-- Config (base_dir, test_design_dir, testcase_dir, postman_collection_path) is
-  supplied per session, not hardcoded — resolve/ask for it before any
-  file-path-dependent action. E2E conventions are fixed at
-  docs/e2e-agent-instructions.md.
+- Config (base_dir, test_design_dir, testcase_dir) is supplied per session,
+  not hardcoded — resolve/ask for it before any file-path-dependent
+  action. postman_collection_path and manual_execution_path are also
+  session metadata but OPTIONAL — may be entirely absent, never gate
+  anything, never override an explicit answer or a codebase pattern. A
+  fillable shape for all five lives at
+  .claude/templates/session-metadata.template.json. E2E conventions are
+  fixed at .claude/instructions/e2e-agent-instructions.md.
 - A planner never writes code. Every repo file has exactly ONE owning skill;
   no file is writable by two skills:
 
@@ -27,14 +31,14 @@ Ground rules that apply to every skill:
     test-creator      tests/<feature>/test_*.py  (only)
     test-review       nothing
     execution-review  nothing
-    test-pipeline     nothing
+    test-pipeline     nothing (orchestrates; writes only via the above)
     nobody (human)    core/**, pytest.ini, environments.py, root conftest.py
 
 - plan.md NAMES what exists rather than describing what is needed. Every
   fixture/service/payload/schema row carries a resolved identifier plus a
   status of EXISTS or MISSING, decided by literal string match against a
   repo inventory — never fuzzy "close enough" matching.
-- The gate is mechanical and fail-closed: a test_id is READY only when
+- The gate is mechanical and fail-closed: a test_name's entry is READY only when
   blocked_on is empty AND open_questions is empty AND every row is EXISTS.
   Any inconsistency is treated as BLOCKED.
 - open_questions ("I need an answer from you") and blocked_on ("a building
@@ -44,21 +48,30 @@ Ground rules that apply to every skill:
   mark it MISSING and halt to test-setup. There is no "user-confirmed"
   escape hatch: a yes in chat is exactly the non-deterministic path this
   design removes.
-- test-setup is isolated: invoked by hand only, never auto-chained, never
-  part of test-pipeline. After it runs, test-plan must re-run so statuses
-  are recomputed.
-- test_id is assigned once (by testcase-writer), never changes, and is
-  carried unchanged through plan.md, generated test code (as a comment —
-  never a docstring), test-review output, and execution-review output.
+- test-setup is invoked either by hand or by test-pipeline's gate when an
+  entry is BLOCKED — either way its mandatory Approve phase applies in
+  full; being invoked from an orchestrator never bypasses it. After it
+  runs, test-plan must re-run so statuses are recomputed. test-setup is
+  never invoked for an open_questions ambiguity — only for a MISSING
+  building block; that distinction stays a human-only halt.
+- test_name is assigned once (by testcase-writer), never changes, and is
+  carried unchanged through plan.md, the generated test method's name,
+  that method's docstring (never a comment above it), test-review output,
+  and execution-review output.
+- Every test is a method inside a class — pipeline-generated code has no
+  standalone test_* functions. All test_names sharing a file_name share
+  one class_name (one class per file, not one per test). plan.md must
+  carry test_name, class_name, and file_name before a test_name's entry
+  can be READY.
 - testcase.md and plan.md follow fixed schemas — never reorder, rename, or
   drop sections when regenerating.
 - Re-invoking a skill on an existing artifact appends/updates only new or
   changed entries — never regenerates the whole artifact from scratch.
 - Deterministic test data by default: an explicit _seed per build_* call,
   never randomization, unless the user explicitly asks otherwise.
-- file_name / test_name are derived consistently from the feature/module
-  name and scenario, matching existing codebase casing. class_name is
-  always n/a — this repo has no test classes.
+- file_name / class_name / test_name are derived consistently from the
+  feature/module name and scenario, matching existing codebase casing.
+  class_name: Test<Feature>[<Suffix>] (e.g. TestUsers, TestUsersE2E).
 
 Output format: a single SKILL.md with YAML frontmatter (name, description)
 followed by markdown sections: a one-line role statement, then Steps,
@@ -95,7 +108,12 @@ Must include:
 - Browse the existing codebase first so identified test cases fit
   established patterns (naming, structure) rather than being invented in
   isolation.
-- For E2E scenarios, read docs/e2e-agent-instructions.md and follow its
+- If manual_execution_path was provided this session (optional session
+  metadata), its notes/screenshots may be consulted as OPTIONAL REFERENCE
+  for existing/expected behavior — never overrides an explicit user
+  answer or codebase pattern, never closes an open_questions entry by
+  itself, may be entirely absent.
+- For E2E scenarios, read .claude/instructions/e2e-agent-instructions.md and follow its
   conventions; if it's missing, tell the user and ask whether to proceed
   without it or create it first.
 - Present test cases as a readable list/table (scenario name + short
@@ -111,31 +129,47 @@ Must include:
 ```
 Generate SKILL.md for "testcase-writer".
 
-Role: converts an approved test-design output into structured testcase.md
-— does NOT identify new test cases and does NOT write code.
+Role: converts an approved test-design output into structured testcase.md.
+test_name is the test's identity — there is no separate test_id — and is
+frozen once approved here. Does NOT identify new test cases and does NOT
+write code.
 
 Must include:
 - Resolve testcase_dir for the session.
+- Read the existing test_name inventory across every testcase.md under
+  testcase_dir first — a new test_name must not collide with one already
+  assigned.
 - For each test case, derive and present these fields for explicit user
-  approval before writing anything: test_id (assigned here, stable
-  forever), test_name, file_name (full path), class_name (ALWAYS n/a —
-  this repo has no test classes; a value here propagates into generated
-  code), test steps (incl. setup), assertion, and marker (one of the
-  markers declared in pytest.ini).
+  approval before writing anything: test_name (the identity — get it right
+  here, see the rule below), file_name (full path), class_name (REQUIRED,
+  never n/a — see "Class grouping" below), test steps (incl. setup),
+  assertion, and marker (one of the markers declared in pytest.ini).
 - Never assume a fixture/setup/assertion not explicitly given or clearly
   established — ask.
-- Derive file_name/test_name consistently from feature/module + scenario,
-  matching existing codebase casing.
-- Incorporate corrections and reconfirm before finalizing; only write
+- Derive file_name/class_name/test_name consistently from feature/module +
+  scenario, matching existing codebase casing.
+- Incorporate corrections and reconfirm before finalizing — this
+  confirmation is the last chance to change test_name; only write
   testcase.md after confirmation.
-- For E2E scenarios, follow docs/e2e-agent-instructions.md.
-- test_id rule: assigned once here, never changes afterward even if
-  test_name is edited later; carried unchanged into plan.md, generated
-  code (as a comment), test-review output, execution-review output.
+- For E2E scenarios, follow .claude/instructions/e2e-agent-instructions.md.
+- test_name rule (identity, frozen after approval): no separate test_id —
+  test_name IS the identity. Once approved, frozen — never changes
+  afterward, even for a typo/clarity fix; carried unchanged into plan.md,
+  the generated test method's name, that method's docstring, test-review
+  output, execution-review output. A genuine rename is a delete-and-recreate
+  (retire the old entry, create a new test_name), not an edit.
+- CLASS GROUPING: every test belongs to a class — no standalone test
+  functions in pipeline-generated code. All test_names sharing a file_name
+  must share the same class_name (one class per file). Derive class_name
+  as Test<PascalCase(feature)>[<PascalCase(suffix)>] (e.g. TestUsers,
+  TestUsersE2E, TestUsersAuth). Before assigning a new class_name, check
+  whether the target file_name already has entries under testcase_dir —
+  reuse their class_name rather than deriving a new one.
 - Idempotency: re-invoking on an existing testcase.md appends/updates only
   new or changed entries.
 - Boundaries: never writes code; never invents test cases beyond what was
-  approved in test-design.
+  approved in test-design; never assigns a test_name that collides with an
+  existing one.
 ```
 
 ## test-plan
@@ -157,12 +191,19 @@ Must include:
   A row is EXISTS only on a literal string match — never fuzzy.
 - Enumerate every testcase.md under testcase_dir and every test case
   within each — never assume a single file or single test case.
-- plan.md fixed structure per test_id: status, marker, target, fixtures,
+- plan.md fixed structure per test_name: status, marker, file_name,
+  class_name, target (file_name :: class_name :: test_name), fixtures,
   services, payloads, schema_expectations, validations, data, cleanup,
   soft_grouping, blocked_on, open_questions. Each fixture/service/payload/
   schema row carries a resolved identifier + source + EXISTS|MISSING.
-- The gate: READY only when blocked_on empty AND open_questions empty AND
-  every row EXISTS; any inconsistency → BLOCKED (fail closed).
+- file_name/class_name/test_name are carried verbatim from testcase.md,
+  never re-derived here — missing one is an open_questions entry, not a
+  guess. Every test_name sharing a file_name must carry the same
+  class_name; a mismatch across entries for the same file is a plan
+  defect (stop and ask).
+- The gate: READY only when test_name/class_name/file_name are all present
+  AND blocked_on empty AND open_questions empty AND every row EXISTS; any
+  inconsistency → BLOCKED (fail closed).
 - validation-planner stays an INTERNAL step that writes no code —
   validations compose core/assertions.py helpers, which always exist, so
   validations never block.
@@ -175,8 +216,8 @@ Must include:
 - Source precedence on conflicts: (1) testcase.md, (2) existing codebase
   patterns / the inventory, (3) Postman collection JSON. Unresolvable
   conflict → stop and ask the user.
-- For E2E plans, also consult docs/e2e-agent-instructions.md.
-- Idempotency: update only new/changed test_id entries on re-run.
+- For E2E plans, also consult .claude/instructions/e2e-agent-instructions.md.
+- Idempotency: update only new/changed test_name entries on re-run.
 - Boundaries: never writes repo code of any kind; never invokes test-setup
   or any other skill; never marks EXISTS without a literal inventory match.
 ```
@@ -188,9 +229,11 @@ Generate SKILL.md for "test-setup".
 
 Role: builds the support layer a test needs before it can be written —
 endpoints, service, payload builder, schema, and fixture — after mandatory
-user approval. Isolated: invoked by hand, never auto-chained, never part of
-test-pipeline. Owns FRAMEWORK_NOTES "Adding a new resource" steps 1-5;
-test-creator owns step 6 (the test).
+user approval. Invoked either by hand or by test-pipeline's gate when a
+plan is BLOCKED; the approval gate applies identically either way — being
+invoked from an orchestrator never makes the write silent. Owns
+FRAMEWORK_NOTES "Adding a new resource" steps 1-5; test-creator owns
+step 6 (the test).
 
 Must include:
 - Write scope, exclusively: api/constants.py, api/<x>_service.py,
@@ -216,10 +259,13 @@ Must include:
   into ONE namespace and a duplicate key raises ConfigError that breaks the
   entire session, not one test. Read every existing key first; follow the
   "<resource>" / "<resource>s_list" convention.
-- After running, tell the user to re-run test-plan so statuses are
-  recomputed. This skill never updates plan.md itself.
-- Boundaries: never writes a test file; never writes without approval;
-  never auto-invoked; never modifies testcase.md or plan.md.
+- After running: if invoked by hand, tell the user to re-run test-plan so
+  statuses are recomputed; if invoked by test-pipeline, it re-runs
+  test-plan itself. This skill never updates plan.md itself.
+- Boundaries: never writes a test file; never writes without explicit
+  approval, whether invoked by hand or by test-pipeline; never resolves an
+  open_questions entry (a human-only halt, not something test-pipeline
+  routes here); never modifies testcase.md or plan.md.
 ```
 
 ## test-creator
@@ -235,27 +281,39 @@ Must include:
 - Resolve testcase_dir / plan.md location for the session.
 - Write scope: tests/<feature>/test_*.py ONLY. Never tests/conftest.py,
   never api/**, never core/**, never pytest.ini.
-- Precondition: every in-scope test_id has status READY. Any BLOCKED →
-  write NOTHING (no partial generation), print that entry's blocked_on,
-  and tell the user to invoke test-setup or make the human-only change.
+- Precondition: every in-scope test_name has status READY — meaning
+  test_name/class_name/file_name are all present, blocked_on empty,
+  open_questions empty, every row EXISTS. Any BLOCKED → write NOTHING (no
+  partial generation), print that entry's blocked_on, and tell the user to
+  invoke test-setup or make the human-only change.
 - Re-verify each EXISTS row against the live repo (quick grep) before
   writing — plan.md may be stale; trust the repo, not the plan.
 - CLOSED-WORLD RULE: the test may reference only identifiers listed in
-  that test_id's fixtures/services/payloads/schema_expectations/
+  that test_name's fixtures/services/payloads/schema_expectations/
   validations rows. Scope this to EXTERNAL references only — ordinary
   Python in the body (locals, loops, chained ids like
   created_id = response.json()["id"]) stays free. Needing anything
   unlisted is a PLAN DEFECT: stop and route back to test-plan. Do NOT
   include escape hatches like "or clearly established codebase pattern"
   or "or user-confirmed".
+- CLASS GROUPING: every test is a method inside a class — no standalone
+  test_* functions. All test_names sharing a file_name go into the SAME
+  class in that file, never split across multiple classes and never one
+  class per method. Method signature: def <test_name>(self, <fixtures in
+  plan order>). If the target file already has the class from an earlier
+  run, ADD the method to it — never create a second class with the same
+  name. A class_name mismatch against an existing class in that file is a
+  plan defect: stop, don't write, route back to test-plan.
 - Apply the plan verbatim: marker, data seeds, soft_grouping wrapping,
   cleanup fixture (never an inline try/finally teardown).
 - Assert only through core/assertions.py — a bare assert produces no
   report record and is invisible to execution-review.
-- Each generated test references its test_id in a comment (never a
-  docstring) for traceability.
-- class_name is n/a — generate plain test_* functions, no test classes.
-- For E2E tests, follow docs/e2e-agent-instructions.md.
+- Each generated test method gets a DOCSTRING (never a comment above the
+  method) restating its test_name plus a one-line description — the only
+  place traceability is recorded.
+- Use file_name/class_name/test_name exactly as given in plan.md — don't
+  reinvent.
+- For E2E tests, follow .claude/instructions/e2e-agent-instructions.md.
 - Boundaries: writes only test files; never creates a fixture, schema,
   service, payload builder, or endpoint (that's test-setup); never
   modifies testcase.md or plan.md.
@@ -267,30 +325,35 @@ Must include:
 Generate SKILL.md for "test-review".
 
 Role: reviews test code created by test-creator against plan.md (and
-testcase.md for original intent), matching by test_id. Does NOT write
+testcase.md for original intent), matching by test_name. Does NOT write
 code — read-only review.
 
 Must include:
 - Resolve testcase_dir for the session.
-- For each test_id in scope, locate the testcase.md entry, the plan.md
-  entry, and the generated test code (matched via the test_id comment
+- For each test_name in scope, locate the testcase.md entry, the plan.md
+  entry, and the generated test code (matched via the test_name docstring
   left by test-creator).
 - TWO PASSES, in order.
-- Pass 1, MECHANICAL conformance (yes/no checks, not judgement): fixtures
-  used ⊆ plan fixtures AND plan fixtures ⊆ used (both directions — an
-  extra is a deviation, an unused one is plan drift); every assert_schema
-  key literal appears in schema_expectations; every assert_* exists in
-  core/assertions.py AND in validations; marker matches the plan; ZERO
-  bare assert statements; no core.http_client / core.auth / core.config /
-  requests import in a test file; every file touched is under
-  tests/<feature>/test_*.py (a write to conftest.py or api/** is a scope
-  violation); the plan's cleanup fixture is wired with no inline
-  try/finally; every test carries its test_id comment.
+- Pass 1, MECHANICAL conformance (yes/no checks, not judgement): the
+  method's class_name matches plan.md and it IS a method (self as first
+  param) inside that class, never a standalone function — every test_name
+  sharing a file_name lives in the SAME class, a second class for the same
+  file is a violation; fixtures used ⊆ plan fixtures AND plan fixtures ⊆
+  used (both directions — an extra is a deviation, an unused one is plan
+  drift); every assert_schema key literal appears in schema_expectations;
+  every assert_* exists in core/assertions.py AND in validations; marker
+  matches the plan; ZERO bare assert statements; no core.http_client /
+  core.auth / core.config / requests import in a test file; every file
+  touched is under tests/<feature>/test_*.py (a write to conftest.py or
+  api/** is a scope violation); the plan's cleanup fixture is wired with
+  no inline try/finally; every test carries a docstring restating its
+  test_name — a comment above the method instead is a conformance
+  failure, not a stylistic variant.
 - Pass 2, JUDGEMENT: deviations (code does something not called for), gaps
-  (requirements not exercised), missing coverage (test_ids with no
+  (requirements not exercised), missing coverage (test_names with no
   corresponding code), and for E2E that steps run in the plan's step order
   with the producer the plan names for each chained value.
-- Report findings per test_id, referencing file/line where possible.
+- Report findings per test_name, referencing file/line where possible.
 - Boundaries: never creates/edits any repo file; never fixes what it
   finds — route the fix to the owning skill (test-creator for test code,
   test-setup for a missing building block, test-plan for a plan defect).
@@ -302,20 +365,20 @@ Must include:
 Generate SKILL.md for "execution-review".
 
 Role: reviews a test execution/run report against plan.md and testcase.md
-across ALL testcase.md files under testcase_dir, matching by test_id,
+across ALL testcase.md files under testcase_dir, matching by test_name,
 checking intended coverage/validations were actually exercised and
 passed. Does NOT write code.
 
 Must include:
 - Resolve testcase_dir for the session.
 - Operates over the full testcase_dir — enumerate every testcase.md file
-  and every test_id within each, plus their plan.md counterparts, not
+  and every test_name within each, plus their plan.md counterparts, not
   just one file/test case.
 - Take the execution/run report supplied by the user.
-- For each test_id, check: was it exercised, did pass/fail align with
+- For each test_name, check: was it exercised, did pass/fail align with
   plan.md's intended validations/schema_expectations, is any in-scope
-  test_id missing from the run report entirely.
-- Report findings per test_id.
+  test_name missing from the run report entirely.
+- Report findings per test_name.
 - Boundaries: never creates/edits any repo file.
 ```
 
@@ -324,32 +387,36 @@ Must include:
 ```
 Generate SKILL.md for "test-pipeline".
 
-Role: orchestrates test-plan → test-creator → test-review in sequence
-over the test cases in scope under testcase_dir, passing output forward
-at each stage.
+Role: orchestrates test-plan → (test-setup, if BLOCKED) → test-creator →
+test-review in sequence over the test cases in scope under testcase_dir,
+passing output forward at each stage.
 
 Must include:
-- Confirm scope with the user (which testcase.md file(s)/test_id(s)) before
+- Confirm scope with the user (which testcase.md file(s)/test_name(s)) before
   starting.
 - Invoke test-plan for that scope.
-- GATE: proceed only if every in-scope test_id has status READY. If any is
-  BLOCKED, or open_questions is non-empty, halt: report the aggregated gaps
-  grouped by remediation and hand control back to the user. Treat any
-  inconsistency between status, blocked_on, and per-row statuses as
-  BLOCKED — fail closed.
-- Invoke test-creator using the READY entries, then test-review.
-- Summarize the end-to-end result (plan produced, code generated, review
-  findings) to the user.
-- test-setup is NOT part of this pipeline and is NEVER auto-invoked — the
-  pipeline halts and the user decides; it must not "helpfully" chain into
-  building the missing building block.
-- RE-ENTRY: after the user runs test-setup, re-enter at test-plan, not at
-  test-creator, so every status is recomputed against the new inventory.
+- GATE: check every in-scope test_name. Treat any inconsistency between
+  status, blocked_on, and per-row statuses as BLOCKED — fail closed.
+    - all READY → continue to test-creator.
+    - any BLOCKED → invoke test-setup (see below).
+    - any open_questions non-empty → halt entirely, hand control back to
+      the user; do NOT invoke test-setup for this — it only fills MISSING
+      building blocks, not ambiguity.
+- test-setup IS invoked automatically by this pipeline's gate on BLOCKED.
+  Its own mandatory Approve phase still applies in full — the pipeline
+  never bypasses it; chaining into test-setup does not make the write
+  silent. test-setup remains separately invocable by hand too.
+- RE-ENTRY: after test-setup finishes, return to test-plan (not
+  test-creator) so every status is recomputed against the new inventory.
   Never carry forward statuses from before a test-setup run.
-- Boundaries: writes nothing itself; only the test-creator step writes
-  code and only tests/<feature>/test_*.py. Does not include running the
-  tests or execution-review
-  (those are separate, user-triggered steps).
+- Invoke test-creator using the READY entries, then test-review.
+- Summarize the end-to-end result (plan produced, any setup performed,
+  code generated, review findings) to the user.
+- Boundaries: writes nothing itself; the test-setup step writes only its
+  own scope and only after its own approval; the test-creator step writes
+  code and only tests/<feature>/test_*.py. Halts entirely (no test-setup
+  invocation) on open_questions. Does not include running the tests or
+  execution-review (those are separate, user-triggered steps).
 ```
 
 ---
@@ -371,7 +438,7 @@ Must include:
 - [What it reads (testcase.md / plan.md / code / execution report / other).]
 - [What it produces, if anything, and under which config-resolved path.]
 - [Any fixed schema its output must follow, if it produces an artifact.]
-- [Whether/how it touches docs/e2e-agent-instructions.md for E2E scope.]
+- [Whether/how it touches .claude/instructions/e2e-agent-instructions.md for E2E scope.]
 - [Idempotency behavior on re-invocation, if it writes an artifact.]
 - Boundaries: [does it write code? If not, say so explicitly — only
   test-creator writes code by default.]

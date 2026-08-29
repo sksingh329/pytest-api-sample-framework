@@ -1,6 +1,6 @@
 ---
 name: test-setup
-description: Builds the support layer a test needs before it can be written — endpoints, service, payload builder, schema, and fixture — after mandatory user approval. Isolated; invoked by hand, never part of test-pipeline.
+description: Builds the support layer a test needs before it can be written — endpoints, service, payload builder, schema, and fixture — after mandatory user approval. Invoked either by hand or by test-pipeline when a plan is BLOCKED; the approval gate applies either way.
 ---
 
 # test-setup
@@ -9,8 +9,10 @@ Fills the gaps `test-plan` reported as `blocked_on`. Owns exactly the "Adding a 
 steps 1–5 from `docs/FRAMEWORK_NOTES.md` — endpoints, service, payload builder, schema, fixture.
 `test-creator` owns step 6, the test itself; this skill never writes a test.
 
-Isolated by design: invoked by hand when `test-plan` halts, **never** auto-invoked and **never**
-part of `test-pipeline`.
+Invoked two ways, both equally valid: by hand when `test-plan` halts, or automatically by
+`test-pipeline`'s gate when an entry is `BLOCKED`. Neither path is a shortcut — the mandatory
+Approve phase below applies exactly the same regardless of who invoked this skill. `test-pipeline`
+never bypasses it; being invoked from an orchestrator does not make a write silent.
 
 ## Write scope
 
@@ -91,14 +93,16 @@ Existing keys at time of writing: `user`, `users_list`, `validation_error`.
 
 ## After this skill runs
 
-Tell the user to re-run `test-plan` — statuses in `plan.md` must be recomputed against the new
-inventory before `test-creator` or `test-pipeline` can proceed. This skill never updates
-`plan.md` itself.
+If invoked by hand, tell the user to re-run `test-plan` — statuses in `plan.md` must be
+recomputed against the new inventory before `test-creator` can proceed. If invoked by
+`test-pipeline`, it re-runs `test-plan` itself as part of its own sequence. Either way, this skill
+never updates `plan.md` itself.
 
 ## Boundaries
 
 - Never writes a test file — that's `test-creator`.
 - Never writes `core/**`, `pytest.ini`, `environments.py`, or the root `conftest.py`.
-- Never writes without explicit approval.
-- Never invoked automatically; not part of `test-pipeline`.
+- Never writes without explicit approval, whether invoked by hand or by `test-pipeline`.
 - Never modifies `testcase.md` or `plan.md`.
+- Never resolves an `open_questions` entry — that needs a human answer, not a scaffolded
+  building block; `test-pipeline` will not invoke this skill for those.

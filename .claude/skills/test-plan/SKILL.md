@@ -30,13 +30,15 @@ exists so it will probably work" is `MISSING`. No fuzzy matching, no near-enough
 
 ## `plan.md` fixed structure
 
-One entry per `test_id`:
+One entry per `test_name`:
 
 ```
-### <test_id>
+### <test_name>
 status: READY | BLOCKED
 marker: smoke | regression | contract
-target: tests/<feature>/test_<x>.py :: <test_name>
+file_name: tests/<feature>/test_<x>.py
+class_name: Test<Feature>[<Suffix>]
+target: <file_name> :: <class_name> :: <test_name>
 fixtures:
   - name: <fixture>   source: tests/conftest.py   status: EXISTS|MISSING
 services:
@@ -62,8 +64,10 @@ Never reorder, rename, or drop a field when regenerating.
 
 ## The gate
 
-A `test_id` is `READY` only when **all** of these hold:
+A `test_name`'s entry is `READY` only when **all** of these hold:
 
+- `test_name`, `class_name`, and `file_name` are all present and non-empty — these identify
+  *where the test lives*, and `test-creator` must not start without them
 - `blocked_on` is empty
 - `open_questions` is empty
 - every row reads `EXISTS`
@@ -80,7 +84,7 @@ closed, never `READY`.
 
 `test-plan` never invokes `test-setup` and never creates a missing fixture, schema, service,
 payload builder, or endpoint. When gaps exist, emit **one consolidated halt** listing every gap
-across every in-scope `test_id`, grouped by remediation, with a copy-pasteable invocation. A gap
+across every in-scope `test_name`, grouped by remediation, with a copy-pasteable invocation. A gap
 needing a new marker or a `core/` change routes to the user, not to `test-setup` — `pytest.ini`
 and `core/` are human-only.
 
@@ -100,6 +104,11 @@ and `core/` are human-only.
   `blocked_on` entry with `remediation: human`.
 - **step numbers** — number every validation and schema row so a chained id has an unambiguous
   producer and `test-review` can check ordering.
+- **file_name, class_name, test_name** — carried verbatim from `testcase.md`, never re-derived
+  here. If any is missing from `testcase.md`, that's an `open_questions` entry, not something to
+  guess — route back to testcase-writer rather than inventing a value.
+- **class_name consistency** — every `test_name` sharing a `file_name` must carry the same
+  `class_name`. A mismatch across entries for the same file is a plan defect: stop and ask.
 
 ## Source precedence
 
@@ -111,19 +120,19 @@ When sources disagree, resolve in this order:
 
 If a conflict can't be resolved this way, stop and ask the user rather than picking one silently.
 
-For E2E test plans, also consult `docs/e2e-agent-instructions.md`.
+For E2E test plans, also consult `.claude/instructions/e2e-agent-instructions.md`.
 
 ## Steps
 
 1. Resolve `testcase_dir` and `postman_collection_path` for this session (ask if not yet provided).
 2. Build the Step 0 inventory.
 3. Enumerate every `testcase.md` under `testcase_dir` and every test case within each.
-4. For each `test_id`, resolve every fixture, service, payload, and schema against the inventory;
+4. For each `test_name`, resolve every fixture, service, payload, and schema against the inventory;
    mark each `EXISTS` or `MISSING`; derive validations from `core/assertions.py`.
 5. Set `status` per the gate above and populate `blocked_on` for every `MISSING` row.
 6. Write/update `plan.md`, preserving the fixed structure.
 7. If any entry is `BLOCKED`, emit the consolidated halt.
-8. If re-invoked on an existing `plan.md`, update only new/changed `test_id` entries — don't
+8. If re-invoked on an existing `plan.md`, update only new/changed `test_name` entries — don't
    regenerate the whole file.
 
 ## Boundaries

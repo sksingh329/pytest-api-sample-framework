@@ -21,7 +21,7 @@ as a concrete trigger to ask, not a judgement call to make silently:
 - **Role / auth** — which role (`default`/`read`/`write`, or unauthenticated)? A scenario that
   doesn't name one is ambiguous, not "use default."
 - **E2E vs single-call** — does this need a multi-step chained scenario (see
-  `docs/e2e-agent-instructions.md`) or a set of independent single-call tests? Don't decide this
+  `.claude/instructions/e2e-agent-instructions.md`) or a set of independent single-call tests? Don't decide this
   from tone; ask if it's not explicit.
 - **Specific data / edge values** — "invalid email" could mean malformed, empty, too long, or
   wrong type. Ask which, or ask if all of them are wanted as separate cases.
@@ -45,7 +45,12 @@ one round, not trickled one question at a time.
    exists rather than being invented in isolation. This can *close* an open question (e.g. the
    codebase already fixes the role convention) — resolve it that way when it genuinely does,
    rather than asking about something the codebase already answers.
-4. For E2E scenarios, read the repo's E2E reference (`docs/e2e-agent-instructions.md`) and follow
+   - If `manual_execution_path` was provided for this session, its step-by-step notes/screenshots
+     may be consulted as **optional reference** for understanding existing or expected behavior.
+     It never overrides an explicit user answer or an established codebase pattern, and it never
+     closes an `open_questions` entry by itself — if it only hints at an answer, still ask. It may
+     be entirely absent.
+4. For E2E scenarios, read the repo's E2E reference (`.claude/instructions/e2e-agent-instructions.md`) and follow
    its structure/conventions instead of inventing new ones. If it doesn't exist yet, tell the user
    and ask whether to proceed without it or create it first.
 5. **Gate**: if any `open_questions` entry is still unresolved, stop here and ask the user — in
