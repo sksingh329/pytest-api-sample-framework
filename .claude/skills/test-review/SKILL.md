@@ -10,7 +10,7 @@ intent), matching by `test_name`. Two passes, in order: mechanical first, judgem
 
 ## Steps
 
-1. Resolve `testcase_dir` for this session.
+1. Resolve `testCaseBaseDir` for this session.
 2. For each `test_name` in scope, locate the `testcase.md` entry, the `plan.md` entry, and the
    generated test code (matched via the `test_name` docstring left by `test-creator`).
 3. Run the mechanical pass, then the judgement pass.
@@ -45,7 +45,7 @@ docstring.
 ## Pass 2 — judgement
 
 Compare the code against `plan.md`'s `validations` and `schema_expectations` and against
-`testcase.md`'s original intent (`test steps`, `assertion`), and flag:
+`testcase.md`'s original intent (`Setup`, `Act`, `Assert`), and flag:
 
 - **Deviations** — code does something the plan/testcase didn't call for.
 - **Gaps** — plan/testcase requirements not exercised in the code.

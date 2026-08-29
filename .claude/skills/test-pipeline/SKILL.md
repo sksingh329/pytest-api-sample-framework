@@ -5,7 +5,7 @@ description: Runs test-plan, then test-setup if anything is BLOCKED (pausing for
 
 # test-pipeline
 
-Orchestrator skill that, for the test cases in scope under `testcase_dir` (under `base_dir`),
+Orchestrator skill that, for the test cases in scope under `testCaseBaseDir`,
 runs the following in sequence, passing output forward:
 
 1. **test-plan** → produces/updates `plan.md`
@@ -16,7 +16,7 @@ runs the following in sequence, passing output forward:
 
 ## Steps
 
-1. Resolve `testcase_dir` for this session (ask if not yet provided).
+1. Resolve `testCaseBaseDir` for this session (ask if not yet provided).
 2. Confirm scope with the user: which `testcase.md` file(s) / `test_name`(s) are in scope.
 3. Invoke `test-plan` for that scope.
 4. **Gate.** Check every in-scope `test_name`. Treat any inconsistency between `status`,

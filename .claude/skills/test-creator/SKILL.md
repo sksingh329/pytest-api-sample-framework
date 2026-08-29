@@ -63,7 +63,7 @@ don't create a new class for each method.
 
 ## Steps
 
-1. Resolve `testcase_dir` / `plan.md` location for this session.
+1. Resolve `testCaseBaseDir` / `plan.md` location for this session.
 2. Check the gate. Any `BLOCKED` in scope → stop as described above.
 3. For each `READY` `test_name`, read its plan entry (`file_name`, `class_name`, `test_name`
    included) — `testcase.md` is consulted only if a plan field is ambiguous, never to override it.

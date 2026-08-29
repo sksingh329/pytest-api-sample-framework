@@ -6,8 +6,8 @@ exercise a realistic user journey end-to-end (e.g. create → read → update �
 a resource, or a flow spanning more than one service), as opposed to a single-call
 test that only checks one request/response in isolation.
 
-This document is the reference all QA Agent skills (test-design, testcase-writer,
-test-plan, test-creator) must follow for E2E scenarios in this repo, instead of
+This document is the reference all QA Agent skills (testcase-writer, test-plan,
+test-setup, test-creator) must follow for E2E scenarios in this repo, instead of
 inventing new conventions per feature.
 
 ## When a scenario is "E2E"

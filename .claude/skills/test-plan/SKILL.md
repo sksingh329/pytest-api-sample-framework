@@ -1,12 +1,17 @@
 ---
 name: test-plan
-description: Builds/updates plan.md for every test case across every testcase.md under testcase_dir, resolving each fixture, service, payload, and schema to an exact existing identifier and halting on anything missing. Never writes code.
+description: Builds/updates plan.md for every test case across every testcase.md under testCaseBaseDir, resolving each fixture, service, payload, and schema to an exact existing identifier and halting on anything missing. Never writes code.
 ---
 
 # test-plan
 
-Operates over `testcase_dir` (under `base_dir`): enumerates **every** `testcase.md` file found
+Operates over `testCaseBaseDir`: enumerates **every** `testcase.md` file found
 there, and **every** test case within each file, and creates/updates the corresponding `plan.md`.
+
+`plan.md` is one-per-test-case, at `testCaseBaseDir/<feature>/<test_name>/plan.md` — the same
+subfolder that holds that `test_name`'s `testcase.md`, named for the `test_name` it plans. Never
+grouped into one file per feature — `testcase.md` and `plan.md` use exactly the same
+one-per-`test_name` shape, for the same folder, on purpose.
 
 `plan.md` does not describe what a test needs — it **names** what already exists, by exact
 identifier, with a status. Anything missing halts the pipeline instead of being invented.
@@ -28,9 +33,11 @@ Read the repo and build the inventory of available building blocks. Do this once
 **A row is `EXISTS` only on a literal string match against this inventory.** "A similar fixture
 exists so it will probably work" is `MISSING`. No fuzzy matching, no near-enough.
 
-## `plan.md` fixed structure
+## `plan.md` fixed structure — mandatory, from `templates/plan.md.template.md`
 
-One entry per `test_name`:
+One `### <test_name>` section — the single entry in that `test_name`'s own `plan.md`, under a
+`# <Feature> -- Plan` H1. Never any other shape — see the template file for the full skeleton plus
+a filled example.
 
 ```
 ### <test_name>
@@ -46,9 +53,9 @@ services:
 payloads:
   - ref: api.payloads.<x>_payloads.build_<x>   args: <literal>   status: EXISTS|MISSING
 schema_expectations:
-  - step: <n>   schema_key: "<key>"   source: api/schemas/<x>.py   status: EXISTS|MISSING
+  - step: <n>   schema_key: "<key>"|none   source: api/schemas/<x>.py|n/a   status: EXISTS|MISSING   reason: <required when schema_key is none>
 validations:
-  - step: <n>   helper: <core.assertions fn>   args: <literal expected value>
+  - step: <n>   helper: <core.assertions fn>   args: <literal expected value>   # <optional note>
 data: <explicit _seed per build_* call, or fixed literals>
 cleanup: <fixture name> | none
 soft_grouping: <steps wrapped in soft_assertions(), or none>
@@ -60,7 +67,23 @@ blocked_on:
 open_questions: []
 ```
 
-Never reorder, rename, or drop a field when regenerating.
+Never reorder, rename, or drop a field when regenerating. `reason` is required whenever
+`schema_key` is `none` — say why there's nothing to validate. A validation's trailing `# <note>`
+comment is optional but should be used whenever a scenario makes more than one call, so each
+check's call is unambiguous.
+
+## Outcome presentation — mandatory
+
+After resolving each `test_name`'s entry, present the outcome to the user in exactly the table
+shape in `templates/plan-outcome-presentation.md` — never as prose, never as a raw dump of the
+`plan.md` fields. One table per `test_name`, titled `<test_name> → status: READY|BLOCKED`. Fixed
+row order: `fixtures`, `services`, `payloads`, `schema_expectations`, `validations`, `cleanup`,
+plus `soft_grouping` (only if not `none`), `blocked_on` (only if `BLOCKED`), `open_questions`
+(only if non-empty). See that file for the row-by-row guidance and a filled example.
+
+This is a report, not an approval gate — `test-plan` writes `plan.md` itself and does not wait on
+the user before writing. The table is how the user sees *why* each row resolved the way it did
+without reading the raw file.
 
 ## The gate
 
@@ -93,8 +116,9 @@ and `core/` are human-only.
 - **validations** — compose helpers from `core/assertions.py` only. These always exist, so
   validations never block. Pin the literal expected value (status code, field value), not a
   description of it. This is the internal validation-planner step; it writes no code.
-- **schema_expectations** — the exact `SCHEMAS` key string passed to `assert_schema`. A step with
-  no body to validate (a 204, say) records `schema_key: none` with a reason.
+- **schema_expectations** — the exact `SCHEMAS` key string passed to `assert_schema`, with
+  `source` as its file. A step with no body to validate (a 204, an unmodeled error shape, say)
+  records `schema_key: none`, `source: n/a`, and a `reason` explaining why.
 - **fixtures** — resolved fixture names from the inventory. Never describe a fixture in prose.
 - **data** — an explicit `_seed` per `build_*` call. Note that `build_user()` with no seed always
   yields the *same* email, so two unseeded tests collide; pin distinct seeds.
@@ -116,7 +140,7 @@ When sources disagree, resolve in this order:
 
 1. `testcase.md` (confirmed source of test intent)
 2. Existing codebase patterns / the inventory
-3. Postman collection JSON (if available, via `postman_collection_path`)
+3. Postman collection JSON (if available, via `postmanCollectionPath`)
 
 If a conflict can't be resolved this way, stop and ask the user rather than picking one silently.
 
@@ -124,19 +148,24 @@ For E2E test plans, also consult `.claude/instructions/e2e-agent-instructions.md
 
 ## Steps
 
-1. Resolve `testcase_dir` and `postman_collection_path` for this session (ask if not yet provided).
+1. Resolve `testCaseBaseDir` and `postmanCollectionPath` for this session (ask if not yet provided).
 2. Build the Step 0 inventory.
-3. Enumerate every `testcase.md` under `testcase_dir` and every test case within each.
+3. Enumerate every `testcase.md` under `testCaseBaseDir` and every test case within each.
 4. For each `test_name`, resolve every fixture, service, payload, and schema against the inventory;
    mark each `EXISTS` or `MISSING`; derive validations from `core/assertions.py`.
 5. Set `status` per the gate above and populate `blocked_on` for every `MISSING` row.
-6. Write/update `plan.md`, preserving the fixed structure.
-7. If any entry is `BLOCKED`, emit the consolidated halt.
-8. If re-invoked on an existing `plan.md`, update only new/changed `test_name` entries — don't
-   regenerate the whole file.
+6. Write/update `testCaseBaseDir/<feature>/<test_name>/plan.md` for each in-scope `test_name`,
+   preserving the fixed structure.
+7. Present the outcome table for each `test_name` (see "Outcome presentation" above).
+8. If any entry is `BLOCKED`, emit the consolidated halt.
+9. If re-invoked on a `test_name` that already has a `plan.md`, overwrite only that `test_name`'s
+   file — never touch another `test_name`'s `plan.md`.
 
 ## Boundaries
 
 - Never creates or edits repo code of any kind — reads and plans only, writes `plan.md`.
 - Never invokes `test-setup` or any other skill.
 - Never marks a row `EXISTS` on anything but a literal inventory match.
+- Never writes `plan.md` anywhere but `testCaseBaseDir/<feature>/<test_name>/plan.md`.
+- Never writes `plan.md` in any shape other than `templates/plan.md.template.md`'s.
+- Never touches another `test_name`'s `plan.md` when adding or updating one.
