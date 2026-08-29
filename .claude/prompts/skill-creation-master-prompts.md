@@ -442,6 +442,15 @@ Must include:
 - Idempotency: re-running on a test_name that already has a report
   overwrites only that file with the latest run — it holds the most recent
   execution, not a history; never touches another test_name's report.
+- FINAL OUTPUT is mandatory — the last thing printed for any invocation,
+  after every in-scope test_name is reported and its execution-report.md
+  written, is one summary block per test_name giving the outcome plus the
+  FULL pytest report path (reports/<api_env>/<timestamp>/report.html),
+  summary.json path, and the full execution-report.md path — never
+  truncated, never "see above," even for a single-test_name run. A
+  test_name that never reached the report (collection failure) still gets
+  its execution report line; the pytest report line shows the reported
+  error instead of a path.
 - Boundaries: runs pytest (the only skill that does); never creates/edits
   test code, plan.md, or testcase.md; writes only that test_name's
   execution-report.md, in the template's exact shape, and no other repo
@@ -454,16 +463,25 @@ Must include:
 ```
 Generate SKILL.md for "test-pipeline".
 
-Role: orchestrates test-plan → (test-setup, if BLOCKED) → test-creator →
-test-review in sequence over the test cases in scope under testCaseBaseDir,
-passing output forward at each stage.
+Role: orchestrates the FULL pipeline end to end — testcase-writer (only if
+no testcase.md exists yet for the scope) → test-plan → (test-setup, if
+BLOCKED) → test-creator → test-review → execution-review — in sequence
+over the test cases in scope under testCaseBaseDir, passing output forward
+at each stage.
 
 Must include:
-- Confirm scope with the user (which testcase.md file(s)/test_name(s)) before
-  starting.
-- Invoke test-plan for that scope.
-- GATE: check every in-scope test_name. Treat any inconsistency between
-  status, blocked_on, and per-row statuses as BLOCKED — fail closed.
+- Resolve testCaseBaseDir; confirm scope with the user (a feature/request,
+  or existing testcase.md file(s)/test_name(s)) before starting.
+- DESIGN GATE: check whether testcase.md already exists for every in-scope
+  test_name. If any are missing, invoke testcase-writer for the scope's
+  request first — its own mandatory approval step still applies in full
+  (derived fields presented, explicit confirmation required before writing
+  testcase.md); never invoked when testcase.md already exists for the
+  scope (that would be an edit, which testcase-writer doesn't do either).
+- Invoke test-plan for the full in-scope set.
+- PLAN GATE: check every in-scope test_name. Treat any inconsistency
+  between status, blocked_on, and per-row statuses as BLOCKED — fail
+  closed.
     - all READY → continue to test-creator.
     - any BLOCKED → invoke test-setup (see below).
     - any open_questions non-empty → halt entirely, hand control back to
@@ -477,13 +495,26 @@ Must include:
   test-creator) so every status is recomputed against the new inventory.
   Never carry forward statuses from before a test-setup run.
 - Invoke test-creator using the READY entries, then test-review.
-- Summarize the end-to-end result (plan produced, any setup performed,
-  code generated, review findings) to the user.
-- Boundaries: writes nothing itself; the test-setup step writes only its
-  own scope and only after its own approval; the test-creator step writes
-  code and only tests/<feature>/test_*.py. Halts entirely (no test-setup
-  invocation) on open_questions. Does not include running the tests or
-  execution-review (those are separate, user-triggered steps).
+- Invoke execution-review for the same in-scope test_name(s) — runs each
+  via pytest (default api_env=dev unless named) and writes that
+  test_name's execution-report.md. State the environment being hit in the
+  summary; invoking test-pipeline is itself the user's trigger to execute,
+  so this step is not gated behind a second confirmation — but a request
+  that explicitly asked to stop short of running the tests skips it.
+- Summarize the end-to-end result (scenarios written if testcase-writer
+  ran, plan produced, any setup performed, code generated, review
+  findings, execution outcome referencing each execution-report.md path)
+  to the user.
+- Boundaries: writes nothing itself; the testcase-writer step writes only
+  testcase.md and only after its own approval, never when testcase.md
+  already exists for the scope; the test-setup step writes only its own
+  scope and only after its own approval; the test-creator step writes code
+  and only tests/<feature>/test_*.py; the execution-review step writes
+  only that test_name's execution-report.md, never plan.md/testcase.md/
+  test code, and never edits pytest.ini/.env/environments.py/core/** to
+  make a run pass. Halts entirely (no test-setup invocation) on
+  open_questions at either the design or plan stage. Never runs a BLOCKED
+  test_name's test at the execution-review stage.
 ```
 
 ---

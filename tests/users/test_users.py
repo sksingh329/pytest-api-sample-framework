@@ -46,9 +46,8 @@ class TestUsers:
         assert_field(replace_response, "gender", replacement["gender"])
         assert_field(replace_response, "status", replacement["status"])
 
-    def test_delete_user(self, created_user, users_service):
-        """test_delete_user -- deleting an existing user returns 204 with an
-        empty body, and a follow-up GET on that id then returns 404."""
+    def test_delete_user(self, users_service, created_user):
+        """test_delete_user: deleting a user returns 204 with an empty body, and the user is subsequently gone (404 on GET)."""
         user_id = created_user.json()["id"]
 
         delete_response = users_service.delete_user(user_id)
@@ -56,6 +55,7 @@ class TestUsers:
         assert_status(delete_response, 204)
         assert_body_empty(delete_response)
 
-        get_response = users_service.get_user(user_id)
+        get_response = users_service.get_user(user_id=user_id)
         assert_status(get_response, 404)
+
 

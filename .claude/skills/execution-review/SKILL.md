@@ -61,6 +61,27 @@ edit to either of those.
 9. Write `testCaseBaseDir/<feature>/<test_name>/execution-report.md` for each in-scope
    `test_name` (see "Write format" below) — the same content just reported, captured as a durable
    artifact next to that `test_name`'s `testcase.md` and `plan.md`.
+10. Close every run with the "Final output" block below — this is the last thing printed, not
+    folded into step 8's per-`test_name` findings.
+
+## Final output — mandatory
+
+The last thing printed for any invocation, after every in-scope `test_name` has been reported and
+written, is one summary block listing, for each `test_name` run:
+
+```
+<test_name> — <outcome>
+  pytest report : <absolute or repo-relative path to reports/<api_env>/<timestamp>/report.html>
+  summary       : <path to summary.json>
+  execution report : <full path to testCaseBaseDir/<feature>/<test_name>/execution-report.md>
+```
+
+Both paths are always shown in full — never truncated, never "see above," never just the
+directory — even when they were already mentioned earlier in the findings, and even when the run
+covered only one `test_name`. If a `test_name` never reached the report (a collection failure), print
+what would have been the report path had it collected, plus the reported error, in place of the
+missing pytest report line; the execution report line still applies since step 9 still wrote that
+file.
 
 ## Write format — mandatory
 
