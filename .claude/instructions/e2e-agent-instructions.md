@@ -10,6 +10,16 @@ This document is the reference all QA Agent skills (testcase-writer, test-plan,
 test-setup, test-creator) must follow for E2E scenarios in this repo, instead of
 inventing new conventions per feature.
 
+## Scope
+
+These instructions apply to any agent query touching code under `api/` or
+`tests/` in this repo — not only requests that explicitly say "E2E". Before
+planning, writing, or reviewing a test (or the support layer it depends on:
+endpoints, service, payload builder, schema, fixture) under either directory,
+check whether the scenario in question qualifies as E2E per "When a scenario
+is 'E2E'" below, and if so, follow the conventions here rather than treating
+it as an ordinary single-call test.
+
 ## When a scenario is "E2E"
 
 A test belongs in the E2E category when it depends on the outcome of a *previous*
@@ -59,15 +69,16 @@ layer, which this framework never does.
 
 ## Structure of an E2E test
 
-- Each test method gets a **docstring** (never a comment above the method) restating its
-  `test_name` with a one-line description, e.g.:
+- Each test method gets a **docstring** (never a comment above the method) describing in
+  plain English what the test verifies — not a restatement of the `test_name`, and not a
+  step-by-step account of the call sequence. Say what's being checked, not how it flows, e.g.:
   ```python
   def test_create_then_update_then_delete_user_e2e(self, users_service, cleanup_users):
-      """test_create_then_update_then_delete_user_e2e: create a user, verify it via
-      GET, update it, then confirm deletion."""
+      """Verifies a user can be created, updated, and deleted, with each change
+      reflected correctly along the way."""
   ```
-  There is no separate id scheme — `test_name` is the test's identity, so the docstring exists
-  for traceability when grepping generated code or reports, not to introduce a second name.
+  The method name still carries the `test_name` identity; the docstring exists to tell a
+  reader what the test is for at a glance, not to duplicate the name or narrate the flow.
 - Arrange only through existing fixtures (`users_service`, `token_provider`,
   `created_user`, `cleanup_users`, etc. from [tests/conftest.py](../tests/conftest.py))
   and the payload builder under `api/payloads/` (e.g.
@@ -113,9 +124,11 @@ test-creator must not invent alternate forms.
 
 ## Traceability
 
-Same rule as the rest of the QA Agent pipeline: the `test_name` docstring on
-each test method is how test-review and execution-review match generated E2E
-test code back to `testcase.md` and `plan.md`. Every E2E test must carry one.
+Same rule as the rest of the QA Agent pipeline: the method name (matching
+`test_name`) is how test-review and execution-review match generated E2E test
+code back to `testcase.md` and `plan.md`. Every E2E test must carry a docstring
+describing what it verifies, but matching happens on the method name, not the
+docstring text.
 
 ## What NOT to do
 
