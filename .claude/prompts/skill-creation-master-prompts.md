@@ -99,14 +99,20 @@ is the directory segment right after tests/ in file_name.
 
 Must include:
 - Resolve testCaseBaseDir for the session before writing anything.
+  postmanCollectionPath and manualExecutionPath are optional session
+  metadata — resolve them too if present, neither gates anything, both
+  may be entirely absent.
 - NEVER ASSUME — concrete triggers to ask about, not judgement calls to
-  make silently: scope boundary (which resource/endpoint is in scope),
-  coverage depth (happy path only vs negative/boundary/permission too),
-  role/auth (default/read/write/unauthenticated), E2E vs single-call,
-  specific data/edge values (e.g. which flavor of "invalid email"),
-  priority/marker (smoke/regression/contract), environment dependence.
-  Don't ask about something the request or the codebase already answers
-  unambiguously — asking about a settled point is its own failure mode.
+  make silently: scope boundary (which resource/endpoint is in scope —
+  a postmanCollectionPath can inform this but never silently decides it;
+  an endpoint present in the collection but unmentioned by the user is
+  still an open question), coverage depth (happy path only vs negative/
+  boundary/permission too), role/auth (default/read/write/unauthenticated),
+  E2E vs single-call, specific data/edge values (e.g. which flavor of
+  "invalid email"), priority/marker (smoke/regression/contract),
+  environment dependence. Don't ask about something the request or the
+  codebase already answers unambiguously — asking about a settled point
+  is its own failure mode.
 - Collect open items as explicit open_questions; resolve what the
   codebase's established patterns genuinely settle, batch the rest into
   ONE round of questions — never trickle one at a time, never present or
@@ -116,6 +122,15 @@ Must include:
 - Browse the existing codebase first so identified test cases fit
   established patterns (naming, structure) rather than being invented in
   isolation.
+- If postmanCollectionPath was provided this session, consult it
+  alongside the codebase — a structured record of endpoints, methods, and
+  example request/response bodies, useful for settling scope boundary and
+  for grounding edge-value scenarios in a real example. It CAN close an
+  open question the same way an established codebase pattern can, but
+  never overrides an explicit user answer or an established codebase
+  pattern when the two disagree (same source precedence as test-plan's:
+  testcase.md-level intent and the codebase outrank the collection). May
+  be entirely absent.
 - If manualExecutionPath was provided this session (optional session
   metadata), its notes/screenshots may be consulted as OPTIONAL REFERENCE
   for existing/expected behavior — never overrides an explicit user

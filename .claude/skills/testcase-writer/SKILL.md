@@ -28,6 +28,9 @@ as a concrete trigger to ask, not a judgement call to make silently:
 
 - **Scope boundary** — which resource(s)/endpoint(s) are in scope? "Test the users API" doesn't
   say whether list/get/create/update/delete are all in scope, or just the one the user mentioned.
+  A `postmanCollectionPath`, if provided, can inform this (which endpoints the collection actually
+  has) but doesn't decide it silently — an endpoint present in the collection but never mentioned
+  by the user is still an open question, not an assumed inclusion.
 - **Coverage depth** — happy path only, or negative/boundary/permission cases too? Don't default
   to "happy path only" just because it wasn't said.
 - **Role / auth** — which role (`default`/`read`/`write`, or unauthenticated)? A scenario that
@@ -48,7 +51,9 @@ one round, not trickled one question at a time.
 
 ## Steps
 
-1. Resolve `testCaseBaseDir` for this session (ask if not yet provided).
+1. Resolve `testCaseBaseDir` for this session (ask if not yet provided). `postmanCollectionPath`
+   and `manualExecutionPath` are optional session metadata — resolve them too if this session
+   has them, but neither gates anything and both may be entirely absent.
 2. Read the request against the "Never assume" list above. Collect every open item as an
    `open_questions` set — don't resolve any of them by guessing.
 3. Browse the existing codebase to understand established patterns (how similar features/
@@ -56,6 +61,16 @@ one round, not trickled one question at a time.
    exists rather than being invented in isolation. This can *close* an open question (e.g. the
    codebase already fixes the role convention) — resolve it that way when it genuinely does,
    rather than asking about something the codebase already answers.
+   - If `postmanCollectionPath` was provided for this session, consult it alongside the codebase
+     to see what the API actually supports — its requests are a structured record of endpoints,
+     methods, and example request/response bodies, useful for settling scope boundary (which
+     resource/endpoint(s) genuinely exist) and for grounding edge-value scenarios in a real
+     example rather than an invented one. It can close an open question the same way an
+     established codebase pattern can (e.g. the collection only has a POST for this resource, so
+     "test the update" is either PUT or doesn't exist yet — ask, don't invent one either way), but
+     it never overrides an explicit user answer or an established codebase pattern when the two
+     disagree — the source precedence in `test-plan`'s "Source precedence" applies here too:
+     `testcase.md`-level intent and the codebase outrank the collection. It may be entirely absent.
    - If `manualExecutionPath` was provided for this session, its step-by-step notes/screenshots
      may be consulted as **optional reference** for understanding existing or expected behavior.
      It never overrides an explicit user answer or an established codebase pattern, and it never
