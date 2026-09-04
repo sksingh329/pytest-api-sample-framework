@@ -254,6 +254,16 @@ def assert_list(
         raise VerificationError(f"assert_list({path}): {len(failures)} check(s) failed:\n{bullet_list}")
 
 
+def assert_body_empty(resp: ApiResponse) -> None:
+    """No response body -- e.g. a 204 No Content on delete. Passes on an
+    empty string as well as whitespace-only text, since servers sometimes
+    pad an otherwise-empty body with a trailing newline."""
+    passed = not resp.text.strip()
+    display_actual = "<empty>" if passed else resp.text
+    record = AssertionRecord("assert_body_empty", passed, "<empty>", display_actual, "body")
+    _verify(record, f"expected empty body, got {display_actual!r}")
+
+
 def assert_response_time(resp: ApiResponse, ms: float) -> None:
     """Latency budget as a first-class check, not an afterthought."""
     passed = resp.elapsed_ms <= ms
