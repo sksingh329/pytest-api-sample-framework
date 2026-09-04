@@ -6,3 +6,5 @@ reports/
 *.egg-info/
 .env
 .claude/settings.local.json
+
+*.DS_Store
