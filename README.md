@@ -216,6 +216,8 @@ that take a plain-language test request through design, planning, scaffolding, c
 review, and execution — each stage handing structured output to the next, so nothing downstream
 has to re-derive intent from scratch.
 
+![QA Agent pipeline](docs/images/qa_agent.png)
+
 | Stage | Skill | Produces | Notes |
 |-------|-------|----------|-------|
 | 0 | `testcase-writer` | `testcase.md` | Turns a request into structured test cases; asks about every ambiguity; needs explicit field-by-field approval before writing. `test_name` is frozen here. |
