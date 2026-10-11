@@ -24,7 +24,8 @@ on:
       marker:
         description: Only tests with this marker
         type: choice
-        options: [all, smoke, regression, contract]
+        # Only markers some test actually uses -- add one here when a test starts using it.
+        options: [all, regression]
         default: all
       keyword:
         description: "Optional -k expression, e.g. create and not auth"
