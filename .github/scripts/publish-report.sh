@@ -78,4 +78,15 @@ git -c user.name="github-actions[bot]" \
     -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
     commit --quiet -m "Publish $label report (run $GITHUB_RUN_ID)"
 git push --quiet origin gh-pages
-echo "Published to: https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/$dest/"
+
+site="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}"
+echo "Published to: $site/$dest/"
+if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+  {
+    echo "### Report"
+    echo "- This run: $site/$dest/"
+    echo "- All reports: $site/"
+    echo ""
+    echo "GitHub Pages can take a minute or two to show a new report."
+  } >> "$GITHUB_STEP_SUMMARY"
+fi

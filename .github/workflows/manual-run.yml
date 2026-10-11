@@ -3,7 +3,7 @@
 # The reportingLabs report is published to GitHub Pages (gh-pages branch,
 # folder manual/<env>/ -- the latest run per environment), e.g.
 #   https://sksingh329.github.io/pytest-api-sample-framework/manual/stage/
-# report.yml's main/ report is left as it is. Both reports are also attached
+# auto-run.yaml's main/ report is left as it is. Both reports are also attached
 # to the run as a downloadable artifact.
 #
 # Tokens come from repository secrets named <ENV>_<ROLE>_TOKEN
@@ -37,7 +37,7 @@ on:
 permissions:
   contents: write
 
-# Shared with report.yml so two publishes to gh-pages never race.
+# Shared with auto-run.yaml so two publishes to gh-pages never race.
 concurrency:
   group: gh-pages-publish
   cancel-in-progress: false
@@ -121,7 +121,5 @@ jobs:
             echo "| Marker | \`$MARKER\` |"
             echo "| Keyword | \`${KEYWORD:-none}\` |"
             echo ""
-            echo "Report: https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/manual/$API_ENV/"
-            echo ""
-            echo "Also attached below as the **reports-$API_ENV-${{ github.run_number }}** artifact."
+            echo "Reports are also attached below as the \`reports-$API_ENV-${{ github.run_number }}\` artifact."
           } >> "$GITHUB_STEP_SUMMARY"

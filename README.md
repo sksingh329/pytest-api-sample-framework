@@ -274,7 +274,7 @@ Two workflows run the suite in CI and publish the reportingLabs report to GitHub
 
 | Workflow | Trigger | Runs against | Published at |
 |----------|---------|--------------|--------------|
-| [`report.yml`](.github/workflows/report.yml) | every push to `main` | dev | [`/main/`](https://sksingh329.github.io/pytest-api-sample-framework/main/) |
+| [`auto-run.yaml`](.github/workflows/auto-run.yaml) | every push to `main` | dev | [`/main/`](https://sksingh329.github.io/pytest-api-sample-framework/main/) |
 | [`manual-run.yml`](.github/workflows/manual-run.yml) | *Actions → Manual test run → Run workflow* | dev or stage (your choice) | `/manual/<env>/` |
 
 The site root, <https://sksingh329.github.io/pytest-api-sample-framework/>, lists every published

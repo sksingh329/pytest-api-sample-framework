@@ -7,7 +7,7 @@
 #   Settings -> Pages -> Build and deployment -> Source: Deploy from a branch,
 #     branch gh-pages, folder / (root)  -- the branch appears after the first run
 #   Settings -> Secrets and variables -> Actions -> New secret: DEV_DEFAULT_TOKEN
-name: API tests + report
+name: Auto test run
 
 on:
   push:
