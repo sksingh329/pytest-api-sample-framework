@@ -18,7 +18,7 @@ on:
         options: [dev, stage]
         default: dev
       tests:
-        description: Test path or node id
+        description: "Tests to run (folder, file, or file::Class::test)"
         type: string
         default: tests
       marker:
