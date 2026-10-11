@@ -1,8 +1,8 @@
 """Builds a valid /users request body from zero arguments. Any field is
 overridable (pass a new value) or removable (pass OMIT) for negative
 tests -- e.g. build_user(email=OMIT) to test a missing-required-field
-case. Randomised values are deterministic under a seed, so a failing test
-is reproducible.
+case. Without a seed every call gives a fresh user (gorest.in rejects a
+reused email with 422); pass _seed to get deterministic, reproducible values.
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ OMIT = object()  # build_user(field=OMIT) drops that key entirely
 
 
 def build_user(_seed: int | None = None, **overrides) -> dict:
-    rng = random.Random(_seed if _seed is not None else 42)
+    rng = random.Random(_seed)  # None -> seeded from system entropy
     n = rng.randint(1000, 99999)
 
     body = {

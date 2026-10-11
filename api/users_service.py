@@ -11,14 +11,14 @@ from core.http_client import ApiResponse
 class UsersService(BaseService):
     service_name = "users"
 
-    def list_users(self, **params) -> ApiResponse:
-        return self._get(UsersEndpoints.BASE, params=params)
+    def list_users(self, headers: dict | None = None, **params) -> ApiResponse:
+        return self._get(UsersEndpoints.BASE, params=params, headers=headers)
 
     def get_user(self, user_id: int) -> ApiResponse:
         return self._get(UsersEndpoints.DETAIL.format(id=user_id))
 
-    def create_user(self, **body) -> ApiResponse:
-        return self._post(UsersEndpoints.BASE, json=body)
+    def create_user(self, headers: dict | None = None, **body) -> ApiResponse:
+        return self._post(UsersEndpoints.BASE, json=body, headers=headers)
 
     def update_user(self, user_id: int, **body) -> ApiResponse:
         return self._put(UsersEndpoints.DETAIL.format(id=user_id), json=body)

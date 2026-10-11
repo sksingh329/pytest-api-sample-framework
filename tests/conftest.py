@@ -61,4 +61,5 @@ def created_user(users_service: UsersService) -> Iterator[ApiResponse]:
 
     yield response
 
-    users_service.delete_user(response.json()["id"])
+    if response.status_code == 201:  # a failed create returns an error list, nothing to delete
+        users_service.delete_user(response.json()["id"])
