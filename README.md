@@ -17,7 +17,6 @@ whether it held.
 - [Adding a new resource](#adding-a-new-resource)
 - [Writing a test case](#writing-a-test-case)
 - [Setting this up for a new project](#setting-this-up-for-a-new-project)
-- [QA Agent — automated pipeline](#qa-agent--automated-pipeline)
 - [Reports](#reports)
 
 ## Architecture
@@ -83,6 +82,9 @@ xdist workers skip this — merges every worker's `*.jsonl`, builds a `run_model
 - **Evidence ledger + HTML report** — every request (including every retry attempt) and every
   assertion is recorded per-test to an append-only JSONL ledger, then merged and rendered into an
   HTML report at session end, with a history page across the last runs.
+- **reportingLabs report, published from CI** — a second, shareable HTML report (pass rate,
+  failure clusters, history, PDF) generated on every run and published to GitHub Pages by the
+  push and manual-run workflows. See [Reports](#reports).
 - **Configurable verbosity** — `api_log_level` (`ERROR`/`WARNING`/`INFO`/`DEBUG`/`TRACE`)
   controls how much evidence is kept per record, from "only failing tests" up to "every retry
   attempt with full headers/bodies." Levels are additive — they never change *what* runs.
@@ -209,38 +211,17 @@ everything lives in three places:
 Everything else — `core/`, `api/base_service.py`, the report pipeline — is project-agnostic and
 should not need changes; only `environments.py`, `.env`, and `pytest.ini` are project-specific.
 
-## QA Agent — automated pipeline
-
-This repo ships a QA Agent: a set of Claude Code skills under [`.claude/skills/`](.claude/skills/)
-that take a plain-language test request through design, planning, scaffolding, code generation,
-review, and execution — each stage handing structured output to the next, so nothing downstream
-has to re-derive intent from scratch.
-
-![QA Agent pipeline](docs/images/qa_agent.png)
-
-| Stage | Skill | Produces | Notes |
-|-------|-------|----------|-------|
-| 0 | `testcase-writer` | `testcase.md` | Turns a request into structured test cases; asks about every ambiguity; needs explicit field-by-field approval before writing. `test_name` is frozen here. |
-| 1 | `test-plan` | `plan.md` | Resolves every fixture, service, payload, and schema a test case needs to an **exact existing identifier**. Halts (`BLOCKED`) on anything missing — never invents one. |
-| 2 | `test-setup` | endpoints, service, payload builder, schema, fixture | Only runs when `test-plan` reports `BLOCKED`. Owns the same six "adding a new resource" steps above (minus the test itself). **Requires explicit approval** before writing, whether invoked by hand or by the pipeline. |
-| 3 | `test-creator` | `tests/<feature>/test_*.py` | Writes the test purely by wiring together identifiers `plan.md` already resolved — no re-deriving requirements. |
-| 4 | `test-review` | — (writes nothing) | Mechanical conformance pass, then a judgement pass for deviations, gaps, and missing coverage, checked against `plan.md` and `testcase.md`. |
-| 5 | `execution-review` | `execution-report.md` | Runs the test via pytest and checks the resulting evidence against `plan.md` and `testcase.md`. |
-
-All artifacts for a given test case live together, one folder per `test_name`:
-`testCaseBaseDir/<feature>/<test_name>/{testcase.md, plan.md, execution-report.md}`.
-
-**Running it:**
-
-- End to end, from a plain request: invoke `test-pipeline` — it runs `testcase-writer` (if no
-  `testcase.md` exists yet), `test-plan`, `test-setup` if anything comes back `BLOCKED` (pausing
-  for its mandatory approval), `test-creator`, `test-review`, and `execution-review`, in order.
-- Any single stage can also be invoked by hand — e.g. re-run `test-plan` after adding a schema by
-  hand, or `execution-review` alone to re-check a test that already exists.
-- The approval gates on `testcase-writer` and `test-setup` are mandatory regardless of whether a
-  human or `test-pipeline` triggered the stage — the pipeline never bypasses them.
-
 ## Reports
+
+Every run produces two reports from the same tests. Neither needs anything in the test code —
+they are both pytest plugins that pick up results on their own.
+
+| Report | Where | Best for |
+|--------|-------|----------|
+| Framework report (`core/plugin.py`) | `reports/<env>/<timestamp>/report.html` | The full evidence trail: every request, retry, assertion, and timing |
+| [reportingLabs](https://reportinglabs.dev) | `reporting-labs/index.html` | A shareable overview: pass rate, failure clusters, history, PDF export |
+
+### Framework report
 
 ```
 reports/<env>/<timestamp>/report.html   # full per-test evidence trail for one run
@@ -252,3 +233,74 @@ reports/<env>/ledger/*.jsonl            # per-worker evidence ledgers, merged at
 
 After a run, open `reports/<api_env>/<timestamp>/report.html` for the full evidence trail
 (requests, retries, assertions, timings), or `reports/<api_env>/index.html` for run history.
+
+### reportingLabs report
+
+[`reporting-labs`](https://reportinglabs.dev) is installed from
+`requirements-test.txt` and registers itself with pytest automatically (a `pytest11` entry
+point) — there is no `conftest.py` or `pytest.ini` wiring. A normal `pytest` run writes:
+
+```
+reporting-labs/index.html               # single self-contained HTML report (open it directly)
+reporting-labs/report.json              # the same data as JSON
+reporting-labs/report.pdf               # PDF export (only when a Chromium/Chrome is available)
+reporting-labs.history.json             # run history for the trend chart (last 30 runs)
+```
+
+It shows the pass rate, failures grouped by root cause, a per-test timeline, and — for each test —
+the API calls it made (method, URL, status, headers, request/response bodies) and the error with
+a plain-language explanation. Tags come from pytest markers (e.g. `regression`).
+
+Options (command line, `pytest.ini`, or environment variables):
+
+```bash
+pytest --rl-output "reporting-labs/$(date +%Y%m%d-%H%M%S)"   # one folder per run (default overwrites reporting-labs/)
+pytest --rl-title "API tests - stage"                         # report title
+pytest --no-rl                                                # skip the reportingLabs report
+REPORTING_LABS_OUTPUT_FOLDER=out pytest                       # same as --rl-output, for CI
+```
+
+The `pytest.ini` equivalents are `reporting_labs`, `reporting_labs_output`, `reporting_labs_title`
+and `reporting_labs_project`. `reporting-labs/` and `reporting-labs.history.json` are gitignored.
+
+> **Masking:** reportingLabs hides anything that looks like a secret (tokens, `Authorization`
+> headers, and text next to words like "token" or "Bearer") as `****`. Never copy an expected
+> value from the HTML report into a test — a masked word looks like real text. Read the actual
+> value from pytest's terminal output or the framework report instead.
+
+### Published reports (GitHub Actions + Pages)
+
+Two workflows run the suite in CI and publish the reportingLabs report to GitHub Pages:
+
+| Workflow | Trigger | Runs against | Published at |
+|----------|---------|--------------|--------------|
+| [`report.yml`](.github/workflows/report.yml) | every push to `main` | dev | [`/main/`](https://sksingh329.github.io/pytest-api-sample-framework/main/) |
+| [`manual-run.yml`](.github/workflows/manual-run.yml) | *Actions → Manual test run → Run workflow* | dev or stage (your choice) | `/manual/<env>/` |
+
+The site root, <https://sksingh329.github.io/pytest-api-sample-framework/>, lists every published
+report with its time and a link to the workflow run. Each folder holds the latest run;
+[`.github/scripts/publish-report.sh`](.github/scripts/publish-report.sh) copies the report into
+its folder on the `gh-pages` branch and rebuilds that landing page. Reports are published even
+when tests fail, and the workflow run still goes red.
+
+The manual workflow takes these inputs:
+
+| Input | Meaning |
+|-------|---------|
+| Environment | `dev` or `stage` |
+| Tests to run | a folder, file, or node id, e.g. `tests/users/test_users.py::TestUsers::test_list_users` (default `tests`) |
+| Marker | `all`, or a marker some test uses (currently `regression`) |
+| Keyword | optional `-k` expression, e.g. `create and not auth` |
+
+Both reports are also attached to each manual run as a downloadable artifact (kept 14 days).
+
+One-time setup for a fork or a new repo:
+
+1. **Settings → Secrets and variables → Actions** — add a secret per token the tests need, named
+   exactly like the env var (`DEV_DEFAULT_TOKEN`, `STAGE_DEFAULT_TOKEN`, …).
+2. Push to `main` once, so the first run creates the `gh-pages` branch.
+3. **Settings → Pages → Build and deployment → Source: Deploy from a branch**, branch `gh-pages`,
+   folder `/ (root)`.
+
+> Published reports are public on a public repo: they include request/response bodies, test data,
+> and commit details. Tokens are masked, but check a report before sharing its link.

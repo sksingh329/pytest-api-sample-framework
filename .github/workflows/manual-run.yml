@@ -1,8 +1,10 @@
 # On-demand test run against a chosen environment. Start it from
 #   Actions -> Manual test run -> Run workflow
-# The reportingLabs report (and the framework's own report) are attached to
-# the run as a downloadable artifact; GitHub Pages is not touched, so the
-# published showcase report from report.yml stays as it is.
+# The reportingLabs report is published to GitHub Pages (gh-pages branch,
+# folder manual/<env>/ -- the latest run per environment), e.g.
+#   https://sksingh329.github.io/pytest-api-sample-framework/manual/stage/
+# report.yml's main/ report is left as it is. Both reports are also attached
+# to the run as a downloadable artifact.
 #
 # Tokens come from repository secrets named <ENV>_<ROLE>_TOKEN
 # (DEV_DEFAULT_TOKEN, STAGE_DEFAULT_TOKEN, ...), the same names core/auth.py
@@ -33,7 +35,12 @@ on:
         default: ""
 
 permissions:
-  contents: read
+  contents: write
+
+# Shared with report.yml so two publishes to gh-pages never race.
+concurrency:
+  group: gh-pages-publish
+  cancel-in-progress: false
 
 jobs:
   run:
@@ -49,6 +56,13 @@ jobs:
           cache-dependency-path: requirements-test.txt
 
       - run: pip install -r requirements-test.txt
+
+      # Run-history chart per environment, kept across runs.
+      - uses: actions/cache@v4
+        with:
+          path: reporting-labs.history.json
+          key: reporting-labs-history-manual-${{ inputs.environment }}-${{ github.run_id }}
+          restore-keys: reporting-labs-history-manual-${{ inputs.environment }}-
 
       # Inputs are passed through env vars, never inlined into the script,
       # so free-text fields can't inject shell commands.
@@ -70,6 +84,14 @@ jobs:
           if [ -n "$KEYWORD" ]; then args+=(-k "$KEYWORD"); fi
           echo "pytest ${args[*]}"
           pytest "${args[@]}"
+
+      # Runs even when tests failed; the job stays red from the pytest step.
+      - name: Publish report
+        if: always() && hashFiles('reporting-labs/index.html') != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_ENV: ${{ inputs.environment }}
+        run: bash .github/scripts/publish-report.sh reporting-labs "manual/$API_ENV" "manual · $API_ENV"
 
       - name: Upload reports
         if: always()
@@ -99,5 +121,7 @@ jobs:
             echo "| Marker | \`$MARKER\` |"
             echo "| Keyword | \`${KEYWORD:-none}\` |"
             echo ""
-            echo "Download the **reports-$API_ENV-${{ github.run_number }}** artifact below and open \`reporting-labs/index.html\`."
+            echo "Report: https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/manual/$API_ENV/"
+            echo ""
+            echo "Also attached below as the **reports-$API_ENV-${{ github.run_number }}** artifact."
           } >> "$GITHUB_STEP_SUMMARY"

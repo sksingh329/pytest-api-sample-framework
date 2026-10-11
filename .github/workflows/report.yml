@@ -1,9 +1,11 @@
 # Runs the API suite against dev on every push to main and publishes the
-# reportingLabs HTML report to GitHub Pages:
-#   https://sksingh329.github.io/pytest-api-sample-framework/
+# reportingLabs HTML report to GitHub Pages (gh-pages branch, folder main/):
+#   https://sksingh329.github.io/pytest-api-sample-framework/main/
+# The site root lists every published report (see manual-run.yml too).
 #
 # One-time repo setup:
-#   Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+#   Settings -> Pages -> Build and deployment -> Source: Deploy from a branch,
+#     branch gh-pages, folder / (root)  -- the branch appears after the first run
 #   Settings -> Secrets and variables -> Actions -> New secret: DEV_DEFAULT_TOKEN
 name: API tests + report
 
@@ -13,20 +15,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# One deploy at a time; a newer push supersedes a queued one.
+# Every workflow that writes to gh-pages shares this group, so two publishes
+# never race; queued runs wait instead of being cancelled.
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: gh-pages-publish
+  cancel-in-progress: false
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    outputs:
-      tests: ${{ steps.pytest.outcome }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,7 +46,7 @@ jobs:
           restore-keys: reporting-labs-history-
 
       # A failing test must still produce and publish a report, so this step
-      # doesn't stop the job; the last job turns a test failure red again.
+      # doesn't stop the job; the last step turns a test failure red again.
       - id: pytest
         continue-on-error: true
         run: pytest --rl-output site
@@ -55,27 +54,13 @@ jobs:
           API_ENV: dev
           DEV_DEFAULT_TOKEN: ${{ secrets.DEV_DEFAULT_TOKEN }}
 
-      - uses: actions/configure-pages@v5
+      - name: Publish report
+        if: always() && hashFiles('site/index.html') != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/publish-report.sh site main "main · dev"
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-
-  result:
-    needs: [test, deploy]
-    runs-on: ubuntu-latest
-    steps:
-      - if: needs.test.outputs.tests != 'success'
+      - if: steps.pytest.outcome != 'success'
         run: |
           echo "::error::Tests failed - see the published report"
           exit 1
