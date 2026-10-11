@@ -1,0 +1,102 @@
+# On-demand test run against a chosen environment. Start it from
+#   Actions -> Manual test run -> Run workflow
+# The reportingLabs report (and the framework's own report) are attached to
+# the run as a downloadable artifact; GitHub Pages is not touched, so the
+# published showcase report from report.yml stays as it is.
+#
+# Tokens come from repository secrets named <ENV>_<ROLE>_TOKEN
+# (DEV_DEFAULT_TOKEN, STAGE_DEFAULT_TOKEN, ...), the same names core/auth.py
+# reads. Only the selected environment's tokens are used.
+name: Manual test run
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to run against
+        type: choice
+        options: [dev, stage]
+        default: dev
+      tests:
+        description: Test path or node id
+        type: string
+        default: tests
+      marker:
+        description: Only tests with this marker
+        type: choice
+        options: [all, smoke, regression, contract]
+        default: all
+      keyword:
+        description: "Optional -k expression, e.g. create and not auth"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: pytest (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
+
+      - run: pip install -r requirements-test.txt
+
+      # Inputs are passed through env vars, never inlined into the script,
+      # so free-text fields can't inject shell commands.
+      - name: Run pytest
+        env:
+          API_ENV: ${{ inputs.environment }}
+          TESTS: ${{ inputs.tests }}
+          MARKER: ${{ inputs.marker }}
+          KEYWORD: ${{ inputs.keyword }}
+          DEV_DEFAULT_TOKEN: ${{ secrets.DEV_DEFAULT_TOKEN }}
+          DEV_READ_TOKEN: ${{ secrets.DEV_READ_TOKEN }}
+          DEV_WRITE_TOKEN: ${{ secrets.DEV_WRITE_TOKEN }}
+          STAGE_DEFAULT_TOKEN: ${{ secrets.STAGE_DEFAULT_TOKEN }}
+          STAGE_READ_TOKEN: ${{ secrets.STAGE_READ_TOKEN }}
+          STAGE_WRITE_TOKEN: ${{ secrets.STAGE_WRITE_TOKEN }}
+        run: |
+          args=("$TESTS" --rl-output reporting-labs --rl-title "API tests - $API_ENV")
+          if [ "$MARKER" != "all" ]; then args+=(-m "$MARKER"); fi
+          if [ -n "$KEYWORD" ]; then args+=(-k "$KEYWORD"); fi
+          echo "pytest ${args[*]}"
+          pytest "${args[@]}"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ inputs.environment }}-${{ github.run_number }}
+          path: |
+            reporting-labs/
+            reports/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Job summary
+        if: always()
+        env:
+          API_ENV: ${{ inputs.environment }}
+          TESTS: ${{ inputs.tests }}
+          MARKER: ${{ inputs.marker }}
+          KEYWORD: ${{ inputs.keyword }}
+        run: |
+          {
+            echo "### Manual test run"
+            echo "| Input | Value |"
+            echo "|---|---|"
+            echo "| Environment | \`$API_ENV\` |"
+            echo "| Tests | \`$TESTS\` |"
+            echo "| Marker | \`$MARKER\` |"
+            echo "| Keyword | \`${KEYWORD:-none}\` |"
+            echo ""
+            echo "Download the **reports-$API_ENV-${{ github.run_number }}** artifact below and open \`reporting-labs/index.html\`."
+          } >> "$GITHUB_STEP_SUMMARY"
